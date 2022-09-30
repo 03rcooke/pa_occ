@@ -346,8 +346,8 @@ sprich_diff <- function(spr_df_pa, spr_df_unp) {
   spr_av <- spr_df %>% 
     dplyr::group_by(grp) %>% 
     dplyr::summarise_at(vars(spr_diff), list(
-      spr_diff_mean = ~mean, 
-      spr_diff_median = ~median, 
+      spr_diff_mean = ~mean(.), 
+      spr_diff_median = ~median(.), 
       spr_diff_low_ci = ~HDInterval::hdi(., credMass = ci)[[1]],
       spr_diff_upp_ci = ~HDInterval::hdi(., credMass = ci)[[2]]))
   
@@ -385,7 +385,7 @@ est_plot_func <- function(grp, est_df, est_diff, vari, lim = NULL, axlab) {
     
     perc_diff_df <- diff_df %>% 
       dplyr::ungroup() %>% 
-      dplyr::summarise_at(vars(perc_diff), list(meds = ~median,
+      dplyr::summarise_at(vars(perc_diff), list(meds = ~median(.),
                                                 low_ci = ~HDInterval::hdi(., credMass = ci)[[1]],
                                                 upp_ci = ~HDInterval::hdi(., credMass = ci)[[2]]))
     
@@ -404,7 +404,7 @@ est_plot_func <- function(grp, est_df, est_diff, vari, lim = NULL, axlab) {
   
   meds <- df %>% 
     dplyr::group_by(prot) %>% 
-    dplyr::summarise_at(vars(vari), list(meds = ~median,
+    dplyr::summarise_at(vars(vari), list(meds = ~median(.),
                                          low_ci = ~HDInterval::hdi(., credMass = ci)[[1]],
                                          upp_ci = ~HDInterval::hdi(., credMass = ci)[[2]])) %>% 
     dplyr::mutate(diff = c(0, diff_av[ , paste0(vari_diff, "_median")][[1]])) %>% 
@@ -466,3 +466,9 @@ spr_pred <- est_plot_func(grp = "Predators", est_df = spr_comb, est_diff = spr_d
 
 # # save plot
 # cowplot::save_plot("outputs/fig2_sprich_over.png", spr_over[[1]], base_height = 6, base_width = 8, dpi = 300)
+
+#### Multi-species trends
+
+## Here we calculate geometric mean occupancy
+
+
