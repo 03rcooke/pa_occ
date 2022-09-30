@@ -40,13 +40,12 @@ library(wrappeR) # wrappeR: multi-species indicators
 # remotes::install_github("https://github.com/robboyd/occAssess")
 library(occAssess)
 
+# # install gghalves from github
+# remotes::install_github('erocoar/gghalves')
+library(gghalves)
+
 # # commit packages to renv library
 # renv::snapshot()
-
-# source functions
-source("functions/pa_pr_fun.R") # source pa_pr function
-source("functions/beta_tbi_func.R") # source beta_tbi_func function
-source("functions/est_plot_func.R") # source est_plot_func function
 
 # load_rdata function
 # loads an RData file, and assigns it to an object name
@@ -340,33 +339,19 @@ spr_comb <- dplyr::bind_rows(dplyr::select(spr_pa, grp, iteration, prot, spr), d
 # function to calculate difference between protected and unprotected areas
 sprich_diff <- function(spr_df_pa, spr_df_unp) {
   
-  spr_df <- dplyr::left_join(dplyr::select(spr_df_pa, grp, iteration, spr, pspr), dplyr::select(spr_df_unp, grp, iteration, spr, pspr), by = c("grp", "iteration")) %>% 
-    dplyr::mutate(spr_diff = spr.x - spr.y,
-                  pspr_diff = pspr.x - pspr.y)
+  spr_df <- dplyr::left_join(dplyr::select(spr_df_pa, grp, iteration, spr), dplyr::select(spr_df_unp, grp, iteration, spr), by = c("grp", "iteration")) %>% 
+    dplyr::mutate(spr_diff = spr.x - spr.y)
   
   # average across iterations
   spr_av <- spr_df %>% 
     dplyr::group_by(grp) %>% 
-    dplyr::summarise_at(vars(spr_diff, pspr_diff), list(
-      ~mean(.), 
-      ~median(.), 
-      low_ci = ~HDInterval::hdi(., credMass = ci)[[1]],
-      upp_ci = ~HDInterval::hdi(., credMass = ci)[[2]])) %>% 
-    # add significance identifier
-    dplyr::mutate(spr_sig = dplyr::case_when(
-      spr_diff_low_ci > 0 & spr_diff_upp_ci > 0 ~ "spos",
-      spr_diff_low_ci < 0 & spr_diff_upp_ci < 0 ~ "sneg",
-      TRUE ~ "ns"
-    )) %>% 
-    dplyr::mutate(pspr_sig = dplyr::case_when(
-      pspr_diff_low_ci > 0 & pspr_diff_upp_ci > 0 ~ "spos",
-      pspr_diff_low_ci < 0 & pspr_diff_upp_ci < 0 ~ "sneg",
-      TRUE ~ "ns"
-    )) %>% 
-    dplyr::mutate(spr_sig = factor(spr_sig, levels = c("sneg", "ns", "spos"))) %>% 
-    dplyr::mutate(pspr_sig = factor(pspr_sig, levels = c("sneg", "ns", "spos")))
+    dplyr::summarise_at(vars(spr_diff), list(
+      spr_diff_mean = ~mean, 
+      spr_diff_median = ~median, 
+      spr_diff_low_ci = ~HDInterval::hdi(., credMass = ci)[[1]],
+      spr_diff_upp_ci = ~HDInterval::hdi(., credMass = ci)[[2]]))
   
-  spr_df <- dplyr::left_join(spr_df, dplyr::select(spr_av, grp, spr_sig, pspr_sig), by = c("grp"))
+  spr_df <- dplyr::left_join(spr_df, dplyr::select(spr_av, grp), by = c("grp"))
   
   return(list(spr_df, spr_av))
   
@@ -374,6 +359,96 @@ sprich_diff <- function(spr_df_pa, spr_df_unp) {
 
 # calculate difference between protected and unprotected areas
 spr_diff_out <- sprich_diff(spr_df_pa = spr_pa, spr_df_unp = spr_unp)
+
+est_plot_func <- function(grp, est_df, est_diff, vari, lim = NULL, axlab) {
+  
+  perc_diff_df <- NULL
+  
+  low_lim <- lim[[1]]
+  upp_lim <- lim[[2]]
+  
+  vari_diff <- paste0(vari, "_diff")
+  
+  df <- est_df %>% 
+    dplyr::filter(grp == !!grp)
+  
+  diff_df <- est_diff[[1]] %>% 
+    dplyr::filter(grp == !!grp) 
+  
+  if(vari == "spr") {
+    
+    vari_y <- paste0(vari, ".y")
+    
+    diff_df <-  diff_df %>% 
+      # percentage difference
+      dplyr::mutate(perc_diff = (.data[[vari_diff]] / .data[[vari_y]]) * 100)
+    
+    perc_diff_df <- diff_df %>% 
+      dplyr::ungroup() %>% 
+      dplyr::summarise_at(vars(perc_diff), list(meds = ~median,
+                                                low_ci = ~HDInterval::hdi(., credMass = ci)[[1]],
+                                                upp_ci = ~HDInterval::hdi(., credMass = ci)[[2]]))
+    
+  }
+  
+  diff_av <- est_diff[[2]] %>% 
+    dplyr::filter(grp == !!grp)
+  
+  numb <- GB_func_spp %>% 
+    dplyr::filter(grp == !!grp)
+  
+  # relative effect size
+  eff <- effsize::cohen.d(as.formula(paste0(vari, " ~ prot")), data = df, hedges.correction = TRUE)
+  
+  eff_text <- paste0(sprintf("%.1f", -eff$estimate), " [", sprintf("%.1f", -eff$conf.int[[2]]), ", ", sprintf("%.1f", -eff$conf.int[[1]]), "]")
+  
+  meds <- df %>% 
+    dplyr::group_by(prot) %>% 
+    dplyr::summarise_at(vars(vari), list(meds = ~median,
+                                         low_ci = ~HDInterval::hdi(., credMass = ci)[[1]],
+                                         upp_ci = ~HDInterval::hdi(., credMass = ci)[[2]])) %>% 
+    dplyr::mutate(diff = c(0, diff_av[ , paste0(vari_diff, "_median")][[1]])) %>% 
+    dplyr::mutate(colr = c("#EE7733", "#0077BB"))
+  
+  est_plot <- ggplot2::ggplot(df, ggplot2::aes(x = prot, y = .data[[vari]])) +
+    # median lines
+    ggplot2::geom_hline(data = meds, ggplot2::aes(yintercept = meds, colour = prot), lty = 2, lwd = 1) +
+    # jittered points
+    ggplot2::geom_jitter(ggplot2::aes(colour = prot), alpha = 0.4)  +
+    # scales
+    ggplot2::scale_y_continuous(name = axlab, limits = c(low_lim + meds[1,2][[1]], upp_lim + meds[1,2][[1]])) +
+    ggplot2::scale_x_discrete(labels = c("Unprotected\n ", "Protected\n ")) +
+    ggplot2::scale_colour_manual(values = c("#EE7733", "#0077BB")) +
+    ggplot2::theme(legend.position = "none",
+                   axis.title.x = ggplot2::element_blank())
+  
+  est_diff_plot <- ggplot2::ggplot(diff_df, ggplot2::aes(x = "", y = .data[[vari_diff]])) +
+    # median lines
+    ggplot2::geom_hline(data = meds, ggplot2::aes(yintercept = diff), colour = meds$colr, lty = 2, lwd = 1) +
+    # half violin
+    gghalves::geom_half_violin(fill = "grey50", side = "r", colour = NA, scale = "count", alpha = 0.6) +
+    # 95% CrI
+    ggplot2::geom_linerange(data = diff_av, ggplot2::aes(ymax = .data[[paste0(vari_diff, "_upp_ci")]], ymin = .data[[paste0(vari_diff, "_low_ci")]], x = ""), colour = "grey50", size = 1, inherit.aes = FALSE) +
+    # median
+    ggplot2::geom_point(data = diff_av, ggplot2::aes(y = .data[[paste0(vari_diff, "_median")]]), colour = "grey50", size = 10, shape = "-") +
+    # relative effect size
+    ggplot2::annotate("text", x = 1, y = min(diff_df[vari_diff]), label = eff_text) +
+    # scales
+    ggplot2::scale_y_continuous(name = "Difference", position = "right", limits = c(low_lim, upp_lim)) +
+    ggplot2::scale_x_discrete(labels = c("Protected minus\nunprotected")) +
+    ggplot2::theme(legend.position = "none",
+                   axis.title.x = ggplot2::element_blank())
+  
+  est_prep_plot <- cowplot::plot_grid(est_plot, est_diff_plot, rel_widths = c(1, 0.8))
+  
+  return(list(est_prep_plot,
+              meds,
+              diff_av,
+              eff,
+              est_diff_plot,
+              perc_diff_df))
+  
+}
 
 # overall
 spr_over <- est_plot_func(grp = "Overall", est_df = spr_comb, est_diff = spr_diff_out, vari = "spr", lim = c(-36, 36), axlab = "Species richness")

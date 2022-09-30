@@ -780,6 +780,22 @@
         "zip"
       ]
     },
+    "gghalves": {
+      "Package": "gghalves",
+      "Version": "0.1.3",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteRepo": "gghalves",
+      "RemoteUsername": "erocoar",
+      "RemoteRef": "HEAD",
+      "RemoteSha": "0ba901f0f93485112ca2d1307211ed2ce6133324",
+      "Hash": "6835283e929566d003a380feeb4ed109",
+      "Requirements": [
+        "ggplot2",
+        "gtable"
+      ]
+    },
     "ggplot2": {
       "Package": "ggplot2",
       "Version": "3.3.3",
