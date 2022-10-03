@@ -151,6 +151,16 @@
       "Hash": "dbb5e436998a7eba5a9d682060533338",
       "Requirements": []
     },
+    "RcppArmadillo": {
+      "Package": "RcppArmadillo",
+      "Version": "0.10.2.2.0",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Hash": "8772b10276b4b4a3dfaa5043f9ad94f8",
+      "Requirements": [
+        "Rcpp"
+      ]
+    },
     "RcppProgress": {
       "Package": "RcppProgress",
       "Version": "0.4.2",
@@ -1636,6 +1646,16 @@
       "Hash": "249d8cd1e74a8f6a26194a91b47f21d1",
       "Requirements": []
     },
+    "rslurm": {
+      "Package": "rslurm",
+      "Version": "0.5.0",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Hash": "7f2016ae52e9ca7c37c6f7871211ae96",
+      "Requirements": [
+        "whisker"
+      ]
+    },
     "rstudioapi": {
       "Package": "rstudioapi",
       "Version": "0.13",
@@ -1794,6 +1814,17 @@
       "Requirements": [
         "raster",
         "sp"
+      ]
+    },
+    "sparta": {
+      "Package": "sparta",
+      "Version": "0.7.1",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Hash": "b1b80d8c212b6ca50d9a65074213c50e",
+      "Requirements": [
+        "Rcpp",
+        "RcppArmadillo"
       ]
     },
     "spatstat.data": {
