@@ -3,7 +3,7 @@
 ## author: "Rob Cooke"
 ## date: "30/09/2022"
 
-## Below is all the code used to prepare the data from raw and run the analyses, however the raw data is not available to share (owned by the data producer)
+## Below is all the code used to prepare the data from raw and run the analyses, however the raw data is not available to share (owned by the data producer [the recording schemes])
 ## So if you are interested in the analyses run, see the uncommented code below
 
 #### Set-up ####
@@ -466,8 +466,8 @@ spr_poll <- est_plot_func(grp = "Pollinators", est_df = spr_comb, est_diff = spr
 # predators
 spr_pred <- est_plot_func(grp = "Predators", est_df = spr_comb, est_diff = spr_diff_out, vari = "spr", lim = c(-31, 31), axlab = "Species richness")
 
-# # save plot
-# cowplot::save_plot("outputs/fig_2_sprich_over.png", spr_over[[1]], base_height = 6, base_width = 8, dpi = 300)
+# save plot
+cowplot::save_plot("outputs/fig_2_sprich_over.png", spr_over[[1]], base_height = 6, base_width = 8, dpi = 300)
 
 #### Multi-species trends ####
 
@@ -673,8 +673,8 @@ chng_pred <- est_plot_func(grp = "Predators", est_df = chng_comb, est_diff = chn
 # combine msi and growth rate plots
 chng_comb_over <- cowplot::plot_grid(msi_over, chng_over[[1]], nrow = 2, labels = "AUTO")
 
-# # save plot
-# cowplot::save_plot("outputs/fig_3_chng_comb_over.png", chng_comb_over, base_height = 11, base_width = 9, dpi = 300)
+# save plot
+cowplot::save_plot("outputs/fig_3_chng_comb_over.png", chng_comb_over, base_height = 11, base_width = 9, dpi = 300)
 
 #### Temporal beta diversity ####
 
@@ -832,8 +832,8 @@ gain_pred <- est_plot_func(grp = "Predators", est_df = beta_tbi, est_diff = beta
 # beta diversity plot for overall
 beta_over_plot <- cowplot::plot_grid(NULL, beta_over[[1]], NULL, nrow = 1, rel_widths = c(0.4, 1, 0.4), labels = c("", "A", "")) %>% cowplot::plot_grid(., cowplot::plot_grid(loss_over[[1]], gain_over[[1]], nrow = 1, labels = c("B", "C")), nrow = 2)
 
-# # save plot
-# cowplot::save_plot("outputs/fig_4_beta_over.png", beta_over_plot, base_height = 8, base_width = 12, dpi = 300)
+# save plot
+cowplot::save_plot("outputs/fig_4_beta_over.png", beta_over_plot, base_height = 8, base_width = 12, dpi = 300)
 
 #### Pollinators combined plots #####
 
@@ -853,8 +853,8 @@ beta_poll_plot <- cowplot::plot_grid(NULL, beta_poll[[1]], NULL, nrow = 1, rel_w
 # species richness, trends, beta diversity
 poll_plot <- cowplot::plot_grid(cowplot::plot_grid(NULL, spr_poll[[1]], NULL, labels = c("", "A", ""), rel_widths = c(0.4, 1, 0.4), ncol = 3), cowplot::plot_grid(msi_poll, chng_poll[[1]], labels = c("B", "C"), ncol = 2), beta_poll_plot, nrow = 3, rel_heights = c(1, 1, 2))
 
-# # save plot
-# cowplot::save_plot("outputs/fig_5_poll.png", poll_plot, base_height = 12, base_width = 10, dpi = 300)
+# save plot
+cowplot::save_plot("outputs/fig_5_poll.png", poll_plot, base_height = 12, base_width = 10, dpi = 300)
 
 #### Predators combined plots #####
 
@@ -864,8 +864,8 @@ beta_pred_plot <- cowplot::plot_grid(NULL, beta_pred[[1]], NULL, nrow = 1, rel_w
 # species richness, trends, beta diversity
 pred_plot <- cowplot::plot_grid(cowplot::plot_grid(NULL, spr_pred[[1]], NULL, labels = c("", "A", ""), rel_widths = c(0.4, 1, 0.4), ncol = 3), cowplot::plot_grid(msi_pred, chng_pred[[1]], labels = c("B", "C"), ncol = 2), beta_pred_plot, nrow = 3, rel_heights = c(1, 1, 2))
 
-# # save plot
-# cowplot::save_plot("outputs/appendix_C_fig_s2_pred.png", pred_plot, base_height = 12, base_width = 10, dpi = 300)
+# save plot
+cowplot::save_plot("outputs/appendix_C_fig_s2_pred.png", pred_plot, base_height = 12, base_width = 10, dpi = 300)
 
 #### GB plot ####
 
@@ -904,8 +904,8 @@ euro_plot <- ggplot2::ggplot(euro, aes(x = long, y = lat)) +
 pro_sub_plot <- cowplot::ggdraw(pro_plot) +
   cowplot::draw_plot(euro_plot, 0.63, 0.55, 0.35, 0.35)
 
-# # save: pro_sub_plot
-# cowplot::save_plot("outputs/fig_1_pro_sub.png", pro_sub_plot, base_height = 6, base_width = 6, dpi = 300)
+# save: pro_sub_plot
+cowplot::save_plot("outputs/fig_1_pro_sub.png", pro_sub_plot, base_height = 6, base_width = 6, dpi = 300)
 
 #### Number of records ####
 
@@ -946,7 +946,196 @@ rec_all <- readRDS("data/rec_all.rds")
 
 sum(rec_all$rec_all)
 
-#### Preprocessing input data for ROBITT - occAssess ####
+#### Species whose models converged ####
+
+## Rhat < 1.1 for first and last years
+
+##### Extract and preprocess rhats #####
+
+# rhat <- function(tax_path, tax_grp, filetype, chained = FALSE, max_iter) {
+#   
+#   spp <- dplyr::filter(occ_pa, tax_grp == !!tax_grp)$species %>% 
+#     unique(.) %>% 
+#     firstup(.)
+#   
+#   bugs <- lapply(spp, function(sp) {
+#     
+#     if(isTRUE(chained)) {
+#       
+#       out_dat <- load_rdata(paste0(tax_path, sp, "_", max_iter, "_1.rdata"))
+#       
+#       if(!is.null(out_dat) & is.null(out_dat$model)) out_dat <- out_dat$out
+#       
+#     } else {
+#       
+#       if(filetype == "rds") {
+#         
+#         out_dat <- readRDS(paste0(tax_path, sp, ".rds"))
+#         
+#         }
+#     
+#       else if(filetype == "rdata") {
+#       
+#         out_dat <- load_rdata(paste0(tax_path, sp, ".rdata"))
+#       
+#       }
+#     }
+#     
+#     bugs <- out_dat$BUGSoutput$summary %>% 
+#       data.frame() %>% 
+#       tibble::rownames_to_column("para") %>% 
+#       dplyr::filter(stringr::str_detect(para, "psi.fs")) %>% 
+#       dplyr::filter(!stringr::str_detect(para, "psi.fs.r_ENGLAND|psi.fs.r_GB|psi.fs.r_NORTHERN_IRELAND|psi.fs.r_SCOTLAND|psi.fs.r_UK|psi.fs.r_WALES|psi.fs.r_high|psi.fs.r_low|psi.fs.r_no_agri|psi.fs.r_pa|psi.fs.r_unp")) %>% 
+#       dplyr::mutate(species = tolower(sp)) %>% 
+#       dplyr::mutate(tax_grp = tax_grp)
+#     
+#   }) %>% 
+#     dplyr::bind_rows()
+#   
+#   return(bugs)
+#   
+# }
+# 
+# ants_rhat <- rhat(tax_path = "/data-s3/occmods/Ants/occmod_outputs/2021_Francesca_bwars_rerun/", tax_grp = "Ants", filetype = "rdata")
+# 
+# # saveRDS(ants_rhat, "data/ants_rhat.rds")
+# 
+# bees_rhat <- rhat(tax_path = "/data-s3/occmods/Bees/occmod_outputs/2021_Francesca_bwars_rerun/", tax_grp = "Bees", filetype = "rdata")
+# 
+# # saveRDS(bees_rhat, "data/bees_rhat.rds")
+# 
+# hover_rhat <- rhat(tax_path = "/data-s3/occmods/Hoverflies/occmod_outputs/2021_Francesca/", tax_grp = "Hoverflies", filetype = "rdata", chained = TRUE, max_iter = 32000)
+# 
+# # saveRDS(hover_rhat, "data/hover_rhat.rds")
+# 
+# lady_rhat <- rhat(tax_path = "/data-s3/occmods/Ladybirds/occmod_outputs/2021_Francesca/", tax_grp = "Ladybirds", filetype = "rdata", chained = TRUE, max_iter = 32000)
+# 
+# # saveRDS(lady_rhat, "data/lady_rhat.rds")
+# 
+# spider_rhat <- rhat(tax_path = "/data-s3/occmods/Spiders/occmod_outputs/2021_Francesca_marlog_rerun/", tax_grp = "Spiders", filetype = "rdata")
+# 
+# # saveRDS(spider_rhat, "data/spider_rhat.rds")
+# 
+# wasps_rhat <- rhat(tax_path = "/data-s3/occmods/Wasps/occmod_outputs/2021_Francesca_bwars_rerun/", tax_grp = "Wasps", filetype = "rdata")
+# 
+# # saveRDS(wasps_rhat, "data/wasps_rhat.rds")
+# 
+# all_rhat <- dplyr::bind_rows(ants_rhat, bees_rhat, hover_rhat, lady_rhat, spider_rhat, wasps_rhat)
+# 
+# # saveRDS(all_rhat, "data/all_rhat.rds")
+
+all_rhat <- readRDS("data/all_rhat.rds")
+
+# first and last rhats
+fl_rhat <- all_rhat %>% 
+  dplyr::group_by(species) %>% 
+  slice(c(1,n()))
+
+conv_spp <- fl_rhat %>% 
+  dplyr::group_by(species) %>%
+  dplyr::filter(all(Rhat < 1.1))
+
+##### rhat analyses #####
+
+# filter to species whose models converged
+occ_pa_conv <- dplyr::filter(occ_pa, species %in% conv_spp$species)
+occ_unp_conv <- dplyr::filter(occ_unp, species %in% conv_spp$species)
+
+# species richness
+spr_pa_conv <- sprich(occ_df = occ_pa_conv) %>% 
+  dplyr::left_join(GB_func_spp, by = "grp")
+spr_unp_conv <- sprich(occ_df = occ_unp_conv) %>% 
+  dplyr::left_join(GB_func_spp, by = "grp")
+
+spr_comb_conv <- dplyr::bind_rows(dplyr::select(spr_pa_conv, grp, iteration, prot, spr), dplyr::select(spr_unp_conv, grp, iteration, prot, spr))
+
+spr_diff_out_conv <- sprich_diff(spr_df_pa = spr_pa_conv, spr_df_unp = spr_unp_conv)
+
+spr_over_conv <- est_plot_func(grp = "Overall", est_df = spr_comb_conv, est_diff = spr_diff_out_conv, vari = "spr", lim = c(-14, 14), axlab = "Species richness")
+
+# multi-species indicator
+msi_pa_conv <- msi(occ_df = occ_pa_conv)
+msi_unp_conv <- msi(occ_df = occ_unp_conv)
+
+msi_sum_pa_conv <- msi_sum(msi_df = msi_pa_conv)
+msi_sum_unp_conv <- msi_sum(msi_df = msi_unp_conv)
+
+msi_sum_comb_conv <- dplyr::bind_rows(msi_sum_pa_conv, msi_sum_unp_conv)
+
+msi_over_conv <- trend_plot_func(grp = "Overall", msi_sum = msi_sum_comb_conv, lim = c(0.055, 0.12), leg = FALSE, axlab = "Geometric\nmean occupancy")
+
+# growth rates
+trend_pa_conv <- trend_change(occ_df = dplyr::select(occ_pa_conv, -tax_grp), taxa = unique(occ_unp_conv$grp))
+trend_unp_conv <- trend_change(occ_df = dplyr::select(occ_unp_conv, -tax_grp), taxa = unique(occ_unp_conv$grp))
+
+chng_pa_conv <- tax_change(trend_df = trend_pa_conv)
+chng_unp_conv <- tax_change(trend_df = trend_unp_conv)
+
+chng_comb_conv <- dplyr::bind_rows(
+  dplyr::select(chng_pa_conv, grp, iteration, change) %>% 
+    dplyr::mutate(prot = "Protected"), 
+  dplyr::select(chng_unp_conv, grp, iteration, change) %>% 
+    dplyr::mutate(prot = "Unprotected")) %>% 
+  dplyr::mutate(prot = factor(prot, levels = c("Unprotected", "Protected")))
+
+chng_diff_out_conv <- change_diff(chng_df_pa = chng_pa_conv, chng_df_unp = chng_unp_conv)
+
+chng_over_conv <- est_plot_func(grp = "Overall", est_df = chng_comb_conv, est_diff = chng_diff_out_conv, vari = "change", lim = c(-2.8, 2.8), axlab = "Growth rate")
+
+chng_comb_over_conv <- cowplot::plot_grid(msi_over_conv, chng_over_conv[[1]], nrow = 2, labels = "AUTO")
+
+# # beta diversity
+# beta_tbi_conv <- lapply(unique(occ_pa_conv$grp), function(xgrp) {
+# 
+#   out <- lapply(1:999, function(x) beta_tbi_func(grp = xgrp, it = x, occ_df_pa = occ_pa_conv, occ_df_unp = occ_unp_conv)) %>%
+#     # bind across iterations
+#   dplyr::bind_rows()
+# 
+# }) %>%
+#   # bind across groups
+#   dplyr::bind_rows()
+# 
+# saveRDS(beta_tbi_conv, "data/beta_tbi_conv.rds")
+
+beta_tbi_conv <- readRDS("data/beta_tbi_conv.rds") %>% 
+  dplyr::mutate(prot = factor(prot, levels = c("Unprotected", "Protected"))) %>% 
+  # convert to percentages
+  dplyr::mutate_at(vars(tbi_val, loss, gain), ~. * 100)
+
+beta_contr_conv <- dplyr::left_join(dplyr::filter(beta_tbi_conv, prot == "Protected"), dplyr::filter(beta_tbi_conv, prot == "Unprotected"), by = c("iteration", "grp"))
+
+beta_diff_out_conv <- beta_diff(beta_df = beta_contr_conv)
+
+## total temporal beta diversity
+
+beta_over_conv <- est_plot_func(grp = "Overall", est_df = beta_tbi_conv, est_diff = beta_diff_out_conv, vari = "tbi_val", lim = c(-2.8, 2.8), axlab = "Temporal\nbeta diversity (%)")
+
+## loss
+
+loss_over_conv <- est_plot_func(grp = "Overall", est_df = beta_tbi_conv, est_diff = beta_diff_out_conv, vari = "loss", lim = c(-2.3, 2.3), axlab = "Loss (%)")
+
+# View(loss_over_conv[[2]])
+# View(loss_over_conv[[3]])
+# View(loss_over_conv[[4]])
+
+## gain
+
+gain_over_conv <- est_plot_func(grp = "Overall", est_df = beta_tbi_conv, est_diff = beta_diff_out_conv, vari = "gain", lim = c(-1.4, 1.4), axlab = "Gain (%)")
+
+# View(gain_over_conv[[2]])
+# View(gain_over_conv[[3]])
+# View(gain_over_conv[[4]])
+
+beta_over_plot_conv <- cowplot::plot_grid(NULL, beta_over_conv[[1]], NULL, nrow = 1, rel_widths = c(0.4, 1, 0.4), labels = c("", "D", "")) %>% cowplot::plot_grid(., cowplot::plot_grid(loss_over_conv[[1]], gain_over_conv[[1]], nrow = 1, labels = c("E", "F")), nrow = 2)
+
+conv_plot <- cowplot::plot_grid(cowplot::plot_grid(NULL, spr_over_conv[[1]], NULL, labels = c("", "A", ""), rel_widths = c(0.4, 1, 0.4), ncol = 3), cowplot::plot_grid(msi_over_conv, chng_over_conv[[1]], labels = c("B", "C"), ncol = 2), beta_over_plot_conv, nrow = 3, rel_heights = c(1, 1, 2))
+
+# save plot
+cowplot::save_plot("outputs/appendix_C_fig_s1_conv.png", conv_plot, base_height = 12, base_width = 10, dpi = 300)
+
+#### ROBITT ####
+
+##### Preprocessing input data for ROBITT - occAssess #####
 
 # # function to convert first letter to uppercase
 # firstup <- function(x) {
@@ -1052,190 +1241,418 @@ sum(rec_all$rec_all)
 # 
 # # saveRDS(all_obs, "data/all_obs.rds")
 
-all_obs <- readRDS("data/all_obs.rds")
+# load data
+all_obs <- readRDS("data/all_obs.rds") %>% 
+  dplyr::mutate(spatialUncertainty = NA,
+                identifier = "Overall")
 
-#### rhat ####
+# all UK grid refs
+sites_gr <- readRDS("data/sites_gr.rds")
 
-# rhat <- function(tax_path, tax_grp, filetype, chained = FALSE, max_iter) {
-#   
-#   spp <- dplyr::filter(occ_pa, tax_grp == !!tax_grp)$species %>% 
-#     unique(.) %>% 
-#     firstup(.)
-#   
-#   bugs <- lapply(spp, function(sp) {
-#     
-#     if(isTRUE(chained)) {
-#       
-#       out_dat <- load_rdata(paste0(tax_path, sp, "_", max_iter, "_1.rdata"))
-#       
-#       if(!is.null(out_dat) & is.null(out_dat$model)) out_dat <- out_dat$out
-#       
-#     } else {
-#       
-#       if(filetype == "rds") {
-#         
-#         out_dat <- readRDS(paste0(tax_path, sp, ".rds"))
-#         
-#         }
-#     
-#       else if(filetype == "rdata") {
-#       
-#         out_dat <- load_rdata(paste0(tax_path, sp, ".rdata"))
-#       
-#       }
-#     }
-#     
-#     bugs <- out_dat$BUGSoutput$summary %>% 
-#       data.frame() %>% 
-#       tibble::rownames_to_column("para") %>% 
-#       dplyr::filter(stringr::str_detect(para, "psi.fs")) %>% 
-#       dplyr::filter(!stringr::str_detect(para, "psi.fs.r_ENGLAND|psi.fs.r_GB|psi.fs.r_NORTHERN_IRELAND|psi.fs.r_SCOTLAND|psi.fs.r_UK|psi.fs.r_WALES|psi.fs.r_high|psi.fs.r_low|psi.fs.r_no_agri|psi.fs.r_pa|psi.fs.r_unp")) %>% 
-#       dplyr::mutate(species = tolower(sp)) %>% 
-#       dplyr::mutate(tax_grp = tax_grp)
-#     
-#   }) %>% 
-#     dplyr::bind_rows()
-#   
-#   return(bugs)
-#   
-# }
-# 
-# ants_rhat <- rhat(tax_path = "/data-s3/occmods/Ants/occmod_outputs/2021_Francesca_bwars_rerun/", tax_grp = "Ants", filetype = "rdata")
-# 
-# # saveRDS(ants_rhat, "data/ants_rhat.rds")
-# 
-# bees_rhat <- rhat(tax_path = "/data-s3/occmods/Bees/occmod_outputs/2021_Francesca_bwars_rerun/", tax_grp = "Bees", filetype = "rdata")
-# 
-# # saveRDS(bees_rhat, "data/bees_rhat.rds")
-# 
-# hover_rhat <- rhat(tax_path = "/data-s3/occmods/Hoverflies/occmod_outputs/2021_Francesca/", tax_grp = "Hoverflies", filetype = "rdata", chained = TRUE, max_iter = 32000)
-# 
-# # saveRDS(hover_rhat, "data/hover_rhat.rds")
-# 
-# lady_rhat <- rhat(tax_path = "/data-s3/occmods/Ladybirds/occmod_outputs/2021_Francesca/", tax_grp = "Ladybirds", filetype = "rdata", chained = TRUE, max_iter = 32000)
-# 
-# # saveRDS(lady_rhat, "data/lady_rhat.rds")
-# 
-# spider_rhat <- rhat(tax_path = "/data-s3/occmods/Spiders/occmod_outputs/2021_Francesca_marlog_rerun/", tax_grp = "Spiders", filetype = "rdata")
-# 
-# # saveRDS(spider_rhat, "data/spider_rhat.rds")
-# 
-# wasps_rhat <- rhat(tax_path = "/data-s3/occmods/Wasps/occmod_outputs/2021_Francesca_bwars_rerun/", tax_grp = "Wasps", filetype = "rdata")
-# 
-# # saveRDS(wasps_rhat, "data/wasps_rhat.rds")
-# 
-# all_rhat <- dplyr::bind_rows(ants_rhat, bees_rhat, hover_rhat, lady_rhat, spider_rhat, wasps_rhat)
-# 
-# # saveRDS(all_rhat, "data/all_rhat.rds")
+# raster of protected areas
+pa_rast <- raster::rasterFromXYZ(dplyr::filter(sites_gr, prot == "pa") %>% dplyr::mutate(z = 1) %>% dplyr::select(x = EASTING, y = NORTHING, z))
 
-all_rhat <- readRDS("data/all_rhat.rds")
+# raster of unprotected areas
+unp_rast <- raster::rasterFromXYZ(dplyr::filter(sites_gr, prot == "unp") %>% dplyr::mutate(z = 1) %>% dplyr::select(x = EASTING, y = NORTHING, z))
 
-# first and last rhats
-fl_rhat <- all_rhat %>% 
-  dplyr::group_by(species) %>% 
-  slice(c(1,n()))
+periods <- as.list(1990:2018)
 
-conv_spp <- fl_rhat %>% 
-  dplyr::group_by(species) %>%
-  dplyr::filter(all(Rhat < 1.1))
+##### Geographic domain - spatial bias #####
 
-#### Species whose models converged ####
+## nearest neighbour index
 
-## Rhat < 1.1 for first and last years
+spat_tax_func <- function(tax) {
+  
+  spatBias_tax_pa <- occAssess::assessSpatialBias(dat = dplyr::filter(all_obs, prot == "pa" & tax_grp == !!tax), periods = periods, mask = pa_rast, nSamps = 100, degrade = TRUE, species = "species", x = "EASTING", y = "NORTHING", year = "year", spatialUncertainty = "spatialUncertainty", identifier = "prot")
+  
+  spatBias_tax_unp <- occAssess::assessSpatialBias(dat = dplyr::filter(all_obs, prot == "unp" & tax_grp == !!tax), periods = periods, mask = pa_rast, nSamps = 100, degrade = TRUE, species = "species", x = "EASTING", y = "NORTHING", year = "year", spatialUncertainty = "spatialUncertainty", identifier = "prot")
+  
+  spat_dat_tax <- dplyr::bind_rows(spatBias_tax_pa$data, spatBias_tax_unp$data) %>%
+    # convert period to year
+    dplyr::mutate(year = as.numeric(Period) + 1989) %>% 
+    dplyr::mutate(identifier = dplyr::recode(identifier, pa = "Protected", unp = "Unprotected"))
+  
+  spatBias_tax_out <- ggplot(data = spat_dat_tax, aes(x = year, y = mean, ymin = lower, ymax = upper, colour = identifier, fill = identifier)) + 
+    geom_hline(yintercept = 1, colour = "grey", lty = 2) +
+    geom_line() + 
+    geom_point() + 
+    geom_ribbon(alpha = 0.5) + 
+    # mean value across years
+    geom_text(x = 1992, y = 1.3, label = sprintf("%.2f", signif(mean(dplyr::filter(spat_dat_tax, identifier == "Protected")$mean), digits = 2)), colour = "#0077BB", size = 3) +
+    geom_text(x = 1992, y = 1.1, label = sprintf("%.2f", signif(mean(dplyr::filter(spat_dat_tax, identifier == "Unprotected")$mean), digits = 2)), colour = "#EE7733", size = 3) +
+    theme_linedraw() + 
+    scale_colour_manual(values = c("#0077BB", "#EE7733")) +
+    scale_fill_manual(values = c("#0077BB", "#EE7733")) +
+    labs(title = tax, x = "Year", y = "Nearest neighbour index", colour = "", fill = "") +
+    ylim(c(0, 1.4))
+  
+  return(spatBias_tax_out)
+  
+}
 
-# filter to species whose models converged
-occ_pa_conv <- dplyr::filter(occ_pa, species %in% conv_spp$species)
-occ_unp_conv <- dplyr::filter(occ_unp, species %in% conv_spp$species)
+# runs ~1 hour
+spatBias_tax <- lapply(unique(all_obs$tax_grp), spat_tax_func)
 
-# species richness
-spr_pa_conv <- sprich(occ_df = occ_pa_conv) %>% 
-  dplyr::left_join(GB_func_spp, by = "grp")
-spr_unp_conv <- sprich(occ_df = occ_unp_conv) %>% 
-  dplyr::left_join(GB_func_spp, by = "grp")
+spatBias_tax_leg <- cowplot::get_legend(spatBias_tax[[1]] +theme(legend.position = "bottom"))
 
-spr_comb_conv <- dplyr::bind_rows(dplyr::select(spr_pa_conv, grp, iteration, prot, spr), dplyr::select(spr_unp_conv, grp, iteration, prot, spr))
+spatBias_tax_comb <- cowplot::plot_grid(spatBias_tax[[1]] + theme(legend.position = "none"), spatBias_tax[[2]] + theme(legend.position = "none") + labs(y = ""), spatBias_tax[[3]] + theme(legend.position = "none"), spatBias_tax[[4]] + theme(legend.position = "none") + labs(y = ""), spatBias_tax[[5]] + theme(legend.position = "none"), spatBias_tax[[6]] + theme(legend.position = "none") + labs(y = ""), ncol = 2)
 
-spr_diff_out_conv <- sprich_diff(spr_df_pa = spr_pa_conv, spr_df_unp = spr_unp_conv)
+spatBias_tax_comb_leg <- cowplot::plot_grid(spatBias_tax_comb, spatBias_tax_leg, ncol = 1, rel_heights = c(3, 0.3))
 
-spr_over_conv <- est_plot_func(grp = "Overall", est_df = spr_comb_conv, est_diff = spr_diff_out_conv, vari = "spr", lim = c(-14, 14), axlab = "Species richness")
+spatBias_tax_comb2 <- cowplot::ggdraw(spatBias_tax_comb_leg) +
+  ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", color = NA))
 
-# multi-species indicator
-msi_pa_conv <- msi(occ_df = occ_pa_conv)
-msi_unp_conv <- msi(occ_df = occ_unp_conv)
+# save plot
+cowplot::save_plot("outputs/appendix_B_fig_s1_spatbias.png", spatBias_tax_comb2, base_height = 8, base_aspect_ratio = 1, dpi = 300)
 
-msi_sum_pa_conv <- msi_sum(msi_df = msi_pa_conv)
-msi_sum_unp_conv <- msi_sum(msi_df = msi_unp_conv)
+##### Geographic domain - spatial coverage #####
 
-msi_sum_comb_conv <- dplyr::bind_rows(msi_sum_pa_conv, msi_sum_unp_conv)
+# protected
+spat_pa <- occAssess::assessSpatialCov(periods = periods,
+                                       dat = dplyr::filter(all_obs, prot == "pa"),
+                                       species = "species", 
+                                       year = "year",
+                                       identifier = "tax_grp",
+                                       x = "EASTING", 
+                                       y = "NORTHING",
+                                       spatialUncertainty = "spatialUncertainty",
+                                       res = 1000,
+                                       output = "overlap",
+                                       minPeriods = 1,
+                                       returnRaster = TRUE)
 
-msi_over_conv <- trend_plot_func(grp = "Overall", msi_sum = msi_sum_comb_conv, lim = c(0.055, 0.12), leg = FALSE, axlab = "Geometric\nmean occupancy")
+# unprotected
+spat_unp <- occAssess::assessSpatialCov(periods = periods,
+                                        dat = dplyr::filter(all_obs, prot == "unp"),
+                                        species = "species", 
+                                        year = "year",
+                                        identifier = "tax_grp",
+                                        x = "EASTING", 
+                                        y = "NORTHING",
+                                        spatialUncertainty = "spatialUncertainty",
+                                        res = 1000,
+                                        output = "overlap",
+                                        minPeriods = 1,
+                                        returnRaster = TRUE)
 
-# growth rates
-trend_pa_conv <- trend_change(occ_df = dplyr::select(occ_pa_conv, -tax_grp), taxa = unique(occ_unp_conv$grp))
-trend_unp_conv <- trend_change(occ_df = dplyr::select(occ_unp_conv, -tax_grp), taxa = unique(occ_unp_conv$grp))
+# function to create plots of spatial coverage
+spat_plot <- function(x, df, pa, prop) {
+  
+  # extract dataframe from raster
+  map_df <- as.data.frame(df[[x]], xy = TRUE) %>% 
+    setNames(., c("x", "y", "z"))
+  
+  if(pa == TRUE & prop == FALSE) {
+    
+    # print proportion of cells sampled
+    print(paste(names(df[[x]]), "prot sampled =", tidyr::drop_na(map_df) %>% nrow(.), "prot tot =", nrow(dplyr::filter(sites_gr, prot == "pa")), "prop sampled = ", (tidyr::drop_na(map_df) %>% nrow(.) / nrow(dplyr::filter(sites_gr, prot == "pa"))) * 100))
+    
+  }
+  
+  if(pa == FALSE & prop == FALSE) {
+    
+    # print proportion of cells sampled
+    print(paste(names(df[[x]]), "unp sampled =", tidyr::drop_na(map_df) %>% nrow(.), "unp tot =", nrow(dplyr::filter(sites_gr, prot == "unp")), "prop sampled = ", (tidyr::drop_na(map_df) %>% nrow(.) / nrow(dplyr::filter(sites_gr, prot == "unp"))) * 100))
+    
+  }
+  
+  if(prop == TRUE) {
+    
+    # print maximum years sampled and mean
+    print(paste(names(df[[x]]), "max years sampled =", max(map_df$z, na.rm = TRUE), "mean years sampled = ", mean(map_df$z, na.rm = TRUE), "mean proportion sampled =", (mean(map_df$z, na.rm = TRUE) / 29) * 100))
+    
+  }
+  
+  p <- ggplot2::ggplot(data = map_df, aes(x = x, y = y)) +
+    # add GB
+    ggplot2::geom_tile(data = sites_gr, ggplot2::aes(x = EASTING, y = NORTHING), fill = "grey", colour = "grey", lwd = 0, alpha = 0.1) +
+    # add protected areas
+    {if(pa == TRUE) ggplot2::geom_tile(data = dplyr::filter(sites_gr, prot == "pa"), ggplot2::aes(x = EASTING, y = NORTHING), alpha = 0.5, fill = "#0077BB", colour = "#0077BB", lwd = 0)} +
+    # add unprotected areas
+    {if(pa == FALSE) ggplot2::geom_tile(data = dplyr::filter(sites_gr, prot == "unp"), aes(x = EASTING, y = NORTHING), alpha = 0.5, fill = "#EE7733", colour = "#EE7733", lwd = 0)} +
+    # add records - overlap
+    {if(prop == FALSE) ggplot2::geom_tile(data = tidyr::drop_na(map_df), fill = "black")} + 
+    # add records proportion of years sampled
+    {if(prop == TRUE) ggplot2::geom_tile(data = tidyr::drop_na(map_df), aes(fill = z / 29))} +
+    # colour scheme for proportion of years sampled
+    {if(prop == TRUE) ggplot2::scale_fill_viridis_c(limits = c(0, 1))} +
+    # title
+    ggplot2::labs(title = names(df[[x]])) +
+    # legend title
+    {if(prop == TRUE) ggplot2::labs(fill = "Proportion\nof years\nsampled")} +
+    # equal coordinates
+    ggplot2::coord_equal() +
+    # edit theme
+    ggplot2::theme(axis.ticks = ggplot2::element_blank(), axis.text = ggplot2::element_blank(), axis.title = ggplot2::element_blank(), panel.border = ggplot2::element_blank(), panel.grid = ggplot2::element_blank(), panel.grid.major = ggplot2::element_blank(), panel.grid.minor = ggplot2::element_blank(), axis.line = ggplot2::element_blank(), panel.background = ggplot2::element_blank()) +
+    # legend
+    {if(prop == FALSE) ggplot2::theme(legend.position = "none")}
+  
+  if(prop == TRUE) {
+    
+    ph <- ggplot2::ggplot(map_df, aes(x = z / 29)) +
+      # protected
+      {if(pa == TRUE) ggplot2::geom_histogram(fill = "#0077BB")} +
+      # unprotected
+      {if(pa == FALSE) ggplot2::geom_histogram(fill = "#EE7733")} +
+      ggplot2::scale_x_continuous(expand = c(0,0)) +
+      ggplot2::scale_y_continuous(expand = c(0,0)) +
+      ggplot2::labs(x = "Proportion of years sampled", y = "Number of grid cells", title = names(df[[x]])) +
+      cowplot::theme_cowplot()
+    
+  }
+  
+  if(prop == TRUE) {
+    
+    return(list(p, ph))
+    
+  } else {
+    
+    return(p)
+    
+  }
+  
+}
 
-chng_pa_conv <- tax_change(trend_df = trend_pa_conv)
-chng_unp_conv <- tax_change(trend_df = trend_unp_conv)
+# create plots
+spat_pa_out <- lapply(1:length(spat_pa[[1]]), function(x) spat_plot(x = x, df = spat_pa[[2]], pa = TRUE, prop = FALSE))
+spat_unp_out <- lapply(1:length(spat_unp[[1]]), function(x) spat_plot(x = x, df = spat_unp[[2]], pa = FALSE, prop = FALSE))
 
-chng_comb_conv <- dplyr::bind_rows(
-  dplyr::select(chng_pa_conv, grp, iteration, change) %>% 
-    dplyr::mutate(prot = "Protected"), 
-  dplyr::select(chng_unp_conv, grp, iteration, change) %>% 
-    dplyr::mutate(prot = "Unprotected")) %>% 
-  dplyr::mutate(prot = factor(prot, levels = c("Unprotected", "Protected")))
+# combine protected and unprotected plots
+spat_comb <- cowplot::plot_grid(spat_pa_out[[1]], spat_unp_out[[1]], spat_pa_out[[2]], spat_unp_out[[2]], spat_pa_out[[3]], spat_unp_out[[3]], spat_pa_out[[4]], spat_unp_out[[4]], spat_pa_out[[5]], spat_unp_out[[5]], spat_pa_out[[6]], spat_unp_out[[6]], ncol = 4)
 
-chng_diff_out_conv <- change_diff(chng_df_pa = chng_pa_conv, chng_df_unp = chng_unp_conv)
+# save
+cowplot::save_plot("outputs/appendix_B_fig_s2_spat_comb.png", spat_comb, base_height = 12, base_aspect_ratio = 0.7, dpi = 300)
 
-chng_over_conv <- est_plot_func(grp = "Overall", est_df = chng_comb_conv, est_diff = chng_diff_out_conv, vari = "change", lim = c(-2.8, 2.8), axlab = "Growth rate")
+##### Geographic domain - spatiotemporal coverage #####
 
-chng_comb_over_conv <- cowplot::plot_grid(msi_over_conv, chng_over_conv[[1]], nrow = 2, labels = "AUTO")
+# calculate spatiotemporal coverage
+spatime_pa <- occAssess::assessSpatialCov(periods = periods,
+                                          dat = dplyr::filter(all_obs, prot == "pa"),
+                                          species = "species", 
+                                          year = "year",
+                                          identifier = "tax_grp",
+                                          x = "EASTING", 
+                                          y = "NORTHING",
+                                          spatialUncertainty = "spatialUncertainty",
+                                          res = 1000,
+                                          output = "nPeriods",
+                                          logCount = FALSE,
+                                          returnRaster = TRUE)
+# repeated at res  = 10000
 
-# # beta diversity
-# beta_tbi_conv <- lapply(unique(occ_pa_conv$grp), function(xgrp) {
-# 
-#   out <- lapply(1:999, function(x) beta_tbi_func(grp = xgrp, it = x, occ_df_pa = occ_pa_conv, occ_df_unp = occ_unp_conv)) %>%
-#     # bind across iterations
-#   dplyr::bind_rows()
-# 
-# }) %>%
-#   # bind across groups
-#   dplyr::bind_rows()
-# 
-# saveRDS(beta_tbi_conv, "data/beta_tbi_conv.rds")
+spatime_unp <- occAssess::assessSpatialCov(periods = periods,
+                                           dat = dplyr::filter(all_obs, prot == "unp"),
+                                           species = "species", 
+                                           year = "year",
+                                           identifier = "tax_grp",
+                                           x = "EASTING", 
+                                           y = "NORTHING",
+                                           spatialUncertainty = "spatialUncertainty",
+                                           res = 1000,
+                                           output = "nPeriods",
+                                           logCount = FALSE,
+                                           returnRaster = TRUE)
+# repeated at res  = 10000
 
-beta_tbi_conv <- readRDS("data/beta_tbi_conv.rds") %>% 
-  dplyr::mutate(prot = factor(prot, levels = c("Unprotected", "Protected"))) %>% 
-  # convert to percentages
-  dplyr::mutate_at(vars(tbi_val, loss, gain), ~. * 100)
+# create plots
+spatime_pa_out <- lapply(1:length(spatime_pa[[1]]), function(x) spat_plot(x = x, df = spatime_pa[[2]], pa = TRUE, prop = TRUE))
+spatime_unp_out <- lapply(1:length(spatime_unp[[1]]), function(x) spat_plot(x = x, df = spatime_unp[[2]], pa = FALSE, prop = TRUE))
 
-beta_contr_conv <- dplyr::left_join(dplyr::filter(beta_tbi_conv, prot == "Protected"), dplyr::filter(beta_tbi_conv, prot == "Unprotected"), by = c("iteration", "grp"))
+# legend
+spatime_leg <- cowplot::get_legend(spatime_pa_out[[1]][[1]])
 
-beta_diff_out_conv <- beta_diff(beta_df = beta_contr_conv)
+# combine plots
+spatime_comb <- cowplot::plot_grid(spatime_pa_out[[1]][[1]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[1]][[1]] + ggplot2::theme(legend.position = "none"), spatime_pa_out[[2]][[1]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[2]][[1]] + ggplot2::theme(legend.position = "none"), spatime_pa_out[[3]][[1]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[3]][[1]] + ggplot2::theme(legend.position = "none"), spatime_pa_out[[4]][[1]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[4]][[1]] + ggplot2::theme(legend.position = "none"), spatime_pa_out[[5]][[1]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[5]][[1]] + ggplot2::theme(legend.position = "none"), spatime_pa_out[[6]][[1]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[6]][[1]] + ggplot2::theme(legend.position = "none"), ncol = 4)
 
-## total temporal beta diversity
+# combine plots with leged
+spatime_comb2 <- cowplot::plot_grid(spatime_comb, cowplot::plot_grid(NULL, spatime_leg, NULL, nrow = 3), ncol = 2, rel_widths = c(4, 0.6))
 
-beta_over_conv <- est_plot_func(grp = "Overall", est_df = beta_tbi_conv, est_diff = beta_diff_out_conv, vari = "tbi_val", lim = c(-2.8, 2.8), axlab = "Temporal\nbeta diversity (%)")
+# save
+cowplot::save_plot("outputs/appendix_B_fig_s3_spatime.png", spatime_comb2, base_height = 12, base_aspect_ratio = 0.7, dpi = 300)
 
-## loss
+# histograms
+spatime_hist <- cowplot::plot_grid(spatime_pa_out[[1]][[2]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[1]][[2]] + ggplot2::theme(legend.position = "none"), spatime_pa_out[[2]][[2]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[2]][[2]] + ggplot2::theme(legend.position = "none"), spatime_pa_out[[3]][[2]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[3]][[2]] + ggplot2::theme(legend.position = "none"), spatime_pa_out[[4]][[2]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[4]][[2]] + ggplot2::theme(legend.position = "none"), spatime_pa_out[[5]][[2]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[5]][[2]] + ggplot2::theme(legend.position = "none"), spatime_pa_out[[6]][[2]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[6]][[2]] + ggplot2::theme(legend.position = "none"), ncol = 4)
 
-loss_over_conv <- est_plot_func(grp = "Overall", est_df = beta_tbi_conv, est_diff = beta_diff_out_conv, vari = "loss", lim = c(-2.3, 2.3), axlab = "Loss (%)")
+# save
+cowplot::save_plot("outputs/appendix_B_fig_s4_spatime_hist.png", spatime_hist, base_height = 12, base_aspect_ratio = 1.2, dpi = 300)
 
-# View(loss_over_conv[[2]])
-# View(loss_over_conv[[3]])
-# View(loss_over_conv[[4]])
+##### Taxonomic domain - taxonomic coverage #####
 
-## gain
+###### Taxonomic groups ######
 
-gain_over_conv <- est_plot_func(grp = "Overall", est_df = beta_tbi_conv, est_diff = beta_diff_out_conv, vari = "gain", lim = c(-1.4, 1.4), axlab = "Gain (%)")
+## sorenson
 
-# View(gain_over_conv[[2]])
-# View(gain_over_conv[[3]])
-# View(gain_over_conv[[4]])
+# prepare data for beta diversity
+# one unique record of species per year
+beta_df <- all_obs %>% 
+  dplyr::group_by(tax_grp, year) %>% 
+  dplyr::distinct(species) %>% 
+  dplyr::mutate(rec = 1) %>% 
+  dplyr::arrange(year) %>% 
+  dplyr::ungroup()
 
-beta_over_plot_conv <- cowplot::plot_grid(NULL, beta_over_conv[[1]], NULL, nrow = 1, rel_widths = c(0.4, 1, 0.4), labels = c("", "D", "")) %>% cowplot::plot_grid(., cowplot::plot_grid(loss_over_conv[[1]], gain_over_conv[[1]], nrow = 1, labels = c("E", "F")), nrow = 2)
+# prepare data for specific taxonomic group - recorded (1) or not recorded (0) per species per year
+# change name of taxonomic group for focal group
+beta_tax <- beta_df %>% 
+  dplyr::filter(tax_grp == "Bees") %>% 
+  tidyr::pivot_wider(names_from = species, values_from = rec, values_fill = 0) %>% 
+  dplyr::select(-year, -tax_grp)
 
-conv_plot <- cowplot::plot_grid(cowplot::plot_grid(NULL, spr_over_conv[[1]], NULL, labels = c("", "A", ""), rel_widths = c(0.4, 1, 0.4), ncol = 3), cowplot::plot_grid(msi_over_conv, chng_over_conv[[1]], labels = c("B", "C"), ncol = 2), beta_over_plot_conv, nrow = 3, rel_heights = c(1, 1, 2))
+# calculate sorenson similarity (i.e., 1 - dissimilarity) in percentage
+beta <- (1 - vegan::vegdist(beta_tax, binary = TRUE)) * 100
 
-# # save plot
-# cowplot::save_plot("outputs/appendix_C_fig_s1_conv.png", conv_plot, base_height = 12, base_width = 10, dpi = 300)
+mean(beta) # mean across years
+sd(beta) # sd across years
 
+## taxonomic coverage
+
+# calculate taxonomic coverage
+tax_cov <- occAssess::assessSpeciesNumber(dat = all_obs,
+                                          species = "species", 
+                                          year = "year",
+                                          identifier = "tax_grp",
+                                          x = "EASTING", 
+                                          y = "NORTHING",
+                                          spatialUncertainty = "spatialUncertainty",
+                                          periods = periods)
+
+# number of species per taxonomic group lookup
+numbs_tax <- data.frame(group = c("Ants", "Bees", "Hoverflies", "Ladybirds", "Spiders", "Wasps"), spp = c(58, 243, 292, 42, 783, 269))
+
+# prepare data for taxonomic coverage plot
+tax_cov_df <- tax_cov[[1]] %>% 
+  dplyr::left_join(numbs_tax, by = "group") %>% 
+  dplyr::mutate(year = Period + 1989) %>% 
+  dplyr::mutate(prop = val / spp)
+
+# function to create plots of taxonomic coverage
+tc_plot <- function(df, tax) {
+  
+  p <- ggplot2::ggplot(data = df, ggplot2::aes(y = prop, x = year, colour = group, group = group)) + 
+    ggplot2::geom_point() + 
+    ggplot2::geom_line() + 
+    ggplot2::scale_y_continuous(limits = c(0, 1)) +
+    ggplot2::labs(x = "Year", y = "Proportion of total species recorded") +
+    {if(tax == TRUE) ggplot2::labs(colour = "Taxonomic\ngroup")} +
+    {if(tax == FALSE) ggplot2::labs(colour = "Functional\ngroup")} +
+    ggplot2::theme_linedraw()
+  
+}
+
+# generate taxonomic coverage plot
+tax_cov_plot <- tc_plot(df = tax_cov_df, tax = TRUE)
+
+###### Functional groups ######
+
+# prepare data for functional groups
+func_obs1 <- dplyr::mutate(all_obs, func_grp = "Overall")
+func_obs2 <- dplyr::mutate(all_obs, func_grp = dplyr::recode(tax_grp, Ants = "Predators", Bees = "Pollinators", Hoverflies = "Predators", Ladybirds = "Predators", Spiders = "Predators", Wasps = "Predators"))
+func_obs3 <- dplyr::filter(all_obs, tax_grp == "Hoverflies") %>% dplyr::mutate(func_grp = dplyr::recode(tax_grp, Hoverflies = "Pollinators"))
+
+func_obs <- dplyr::bind_rows(func_obs1, func_obs2, func_obs3)
+
+## sorenson
+
+# prepare data for beta diversity
+# one unique record of species per year
+beta_df <- func_obs %>% 
+  dplyr::group_by(func_grp, year) %>% 
+  dplyr::distinct(species) %>% 
+  dplyr::mutate(rec = 1) %>% 
+  dplyr::arrange(year) %>% 
+  dplyr::ungroup()
+
+# prepare data for specific functional group - recorded (1) or not recorded (0) per species per year
+# change name of functional group for focal group
+beta_func <- beta_df %>% 
+  dplyr::filter(func_grp == "Pollinators") %>% 
+  tidyr::pivot_wider(names_from = species, values_from = rec, values_fill = 0) %>% 
+  dplyr::select(-year, -func_grp)
+
+# calculate sorenson similarity (i.e., 1 - dissimilarity) in percentage
+beta <- (1 - vegan::vegdist(beta_func, binary = TRUE)) * 100
+
+mean(beta) # mean across years
+sd(beta) # sd across years
+
+# calculate taxonomic coverage
+func_cov <- occAssess::assessSpeciesNumber(dat = func_obs,
+                                           species = "species", 
+                                           year = "year",
+                                           identifier = "func_grp",
+                                           x = "EASTING", 
+                                           y = "NORTHING",
+                                           spatialUncertainty = "spatialUncertainty",
+                                           periods = periods)
+
+# number of species per functional group lookup
+numbs_func <- data.frame(group = c("Overall", "Pollinators", "Predators"), spp = c(1687, 535, 1444))
+
+# prepare data for taxonomic coverage
+func_cov_df <- func_cov[[1]] %>% 
+  dplyr::left_join(numbs_func, by = "group") %>% 
+  dplyr::mutate(year = Period + 1989) %>% 
+  dplyr::mutate(prop = val / spp)
+
+# create taxonomic coverage plot
+func_cov_plot <- tc_plot(df = func_cov_df, tax = FALSE)
+
+# combine plots
+tax_cov_comb <- cowplot::plot_grid(tax_cov_plot, func_cov_plot, ncol = 2)
+
+# save
+cowplot::save_plot("outputs/appendix_B_fig_s5_tax_cov.png", tax_cov_comb, base_height = 5, base_aspect_ratio = 3, dpi = 300)
+
+##### Other potential biases - proportion of repeats #####
+
+## repeat visits proportion
+
+# prepare counts of visits per site
+rep_df <- all_obs %>% 
+  dplyr::count(tax_grp, grid, year) %>% 
+  dplyr::mutate(rep_occ = ifelse(n == 1, "Single visit", "Repeat visit")) %>% 
+  dplyr::mutate(rep_occ = factor(rep_occ, levels = c("Single visit", "Repeat visit"))) %>% 
+  dplyr::count(tax_grp, year, rep_occ)
+
+## stacked barchart for each taxonomic group
+
+# ants
+stack_ants <- ggplot2::ggplot(dplyr::filter(rep_df, tax_grp == "Ants"), ggplot2::aes(x = year, y = n, fill = rep_occ)) + 
+  ggplot2::geom_bar(position = "stack", stat = "identity") +
+  ggplot2::scale_fill_manual(values = c("grey60", "grey40")) +
+  ggplot2::labs(x = "Year", y = "Number of\ngrid cells", fill = "", title = "Ants")
+
+stack_bees <- ggplot2::ggplot(dplyr::filter(rep_df, tax_grp == "Bees"), ggplot2::aes(x = year, y = n, fill = rep_occ)) + 
+  ggplot2::geom_bar(position = "stack", stat = "identity") +
+  ggplot2::scale_fill_manual(values = c("grey60", "grey40")) +
+  ggplot2::labs(x = "Year", y = "Number of\ngrid cells", fill = "", title = "Bees")
+
+stack_hover <- ggplot2::ggplot(dplyr::filter(rep_df, tax_grp == "Hoverflies"), ggplot2::aes(x = year, y = n, fill = rep_occ)) + 
+  ggplot2::geom_bar(position = "stack", stat = "identity") +
+  ggplot2::scale_fill_manual(values = c("grey60", "grey40")) +
+  ggplot2::labs(x = "Year", y = "Number of\ngrid cells", fill = "", title = "Hoverflies")
+
+stack_lady <- ggplot2::ggplot(dplyr::filter(rep_df, tax_grp == "Ladybirds"), ggplot2::aes(x = year, y = n, fill = rep_occ)) + 
+  ggplot2::geom_bar(position = "stack", stat = "identity") +
+  ggplot2::scale_fill_manual(values = c("grey60", "grey40")) +
+  ggplot2::labs(x = "Year", y = "Number of\ngrid cells", fill = "", title = "Ladybirds")
+
+stack_spid <- ggplot2::ggplot(dplyr::filter(rep_df, tax_grp == "Spiders"), ggplot2::aes(x = year, y = n, fill = rep_occ)) + 
+  ggplot2::geom_bar(position = "stack", stat = "identity") +
+  ggplot2::scale_fill_manual(values = c("grey60", "grey40")) +
+  ggplot2::labs(x = "Year", y = "Number of\ngrid cells", fill = "", title = "Spiders")
+
+stack_wasp <- ggplot2::ggplot(dplyr::filter(rep_df, tax_grp == "Wasps"), ggplot2::aes(x = year, y = n, fill = rep_occ)) + 
+  ggplot2::geom_bar(position = "stack", stat = "identity") +
+  ggplot2::scale_fill_manual(values = c("grey60", "grey40")) +
+  ggplot2::labs(x = "Year", y = "Number of\ngrid cells", fill = "", title = "Wasps")
+
+# combine plots
+stack_comb <- cowplot::plot_grid(stack_ants + ggplot2::theme(legend.position = "none"), stack_bees + ggplot2::theme(legend.position = "none") + ggplot2::labs(y = ""), stack_hover + ggplot2::theme(legend.position = "none"), stack_lady + ggplot2::theme(legend.position = "none") + ggplot2::labs(y = ""), stack_spid + ggplot2::theme(legend.position = "none"), stack_wasp + ggplot2::theme(legend.position = "none") + ggplot2::labs(y = ""), ncol = 2) %>% 
+  # add legend
+  cowplot::plot_grid(., cowplot::get_legend(stack_ants), ncol = 2, rel_widths = c(1, 0.2))
+
+# save
+cowplot::save_plot("outputs/appendix_B_fig_s5_stacks.png", stack_comb, base_height = 8, base_aspect_ratio = 1.1, dpi = 300)
+
+#### End ####
