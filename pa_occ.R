@@ -4,7 +4,7 @@
 ## date: "30/09/2022"
 
 ## Below is all the code used to prepare the data from raw and run the analyses, however the raw data is not available to share (owned by the data producer [the recording schemes])
-## So if you are interested in the analyses run, see the uncommented code below
+## So if you are interested in only the analyses, see the uncommented code below
 
 #### Set-up ####
   
@@ -615,7 +615,7 @@ tax_change <- function(trend_df) {
   
   chng_tax <- trend_df %>% 
     dplyr::group_by(grp, iteration) %>% 
-    dplyr::summarise(change = mean(change))
+    dplyr::summarise(change = median(change))
 }
 
 # summarise annual growth rate per group
@@ -905,7 +905,7 @@ pro_sub_plot <- cowplot::ggdraw(pro_plot) +
   cowplot::draw_plot(euro_plot, 0.63, 0.55, 0.35, 0.35)
 
 # save: pro_sub_plot
-cowplot::save_plot("outputs/fig_1_pro_sub.png", pro_sub_plot, base_height = 6, base_width = 6, dpi = 300)
+cowplot::save_plot("outputs/fig_1_pro_sub.png", pro_sub_plot, base_height = 6, base_width = 4, dpi = 300)
 
 #### Number of records ####
 
