@@ -116,7 +116,7 @@ ci <- 0.95 # credible interval
 # # pa coverage at end of time period
 # pa_pr_2018 <- pa_pr(pa = pa, rast_temp = rast_temp, gr_ref = gr_ref, yr = 2018)
 
-##### Data #####
+##### Protected area data #####
 
 ## Here we load the protected area data and classify sites as protected or unprotected
 
@@ -268,11 +268,15 @@ ntax <- length(taxa)
 #   # match species list
 #   dplyr::filter(species %in% occ_pa_prep$species) 
 
-#### Functional groups ####
+#### Load preprocessed data ####
+
+##### Load prepared occupancy data #####
 
 # prepared occupancy data
 occ_pa_prep <- readRDS("data/occ_pa_prep.rds")
 occ_unp_prep <- readRDS("data/occ_unp_prep.rds")
+
+##### Assign functional groups #####
 
 # duplicate hoverflies as there are primary contributors to two ecosystem functions
 hov_pa <- occ_pa_prep %>% 
@@ -307,7 +311,49 @@ GB_func_spp <- occ_pa %>%
 # tidy up
 rm(hov_pa, hov_unp, occ_pa_func, occ_pa_prep, occ_unp_func, occ_unp_prep)
 
-#### Species richness ####
+#### Main analyses ####
+
+##### Fig 1 - GB plot #####
+
+# fig 1
+# plot of protected vs unprotected grid cells
+
+# sites used
+sites_gr <- readRDS("data/sites_gr.rds")
+
+pro_plot <- ggplot2::ggplot(data = sites_gr, aes(x = EASTING, y = NORTHING, fill = prot)) +
+  ggplot2::geom_raster() +
+  ggplot2::coord_equal() +
+  ggplot2::scale_fill_manual(breaks = c("pa", "unp"), labels = c("Protected", "Unprotected"), values = c("#0077BB", "#EE7733", "grey")) +
+  ggplot2::theme_void() +
+  ggplot2::theme(legend.title = element_blank(),
+                 legend.position = "bottom")
+
+euro <- ggplot2::map_data("world") %>% 
+  dplyr::mutate(GB = as.factor(ifelse(subregion %in% c("Great Britain", "Wales", "Isle of Wight", "Scotland"), 1, 0)))
+
+euro_plot <- ggplot2::ggplot(euro, aes(x = long, y = lat)) +
+  ggplot2::geom_polygon(aes(group = group, fill = GB, colour = GB), size = 0.3) +
+  ggplot2::coord_map(project = "orthographic", xlim = c(-12,44), ylim = c(35,70)) +
+  ggplot2::scale_fill_manual(values = c("grey", "black")) +
+  ggplot2::scale_colour_manual(values = c("darkgrey", "black")) +
+  ggplot2::scale_x_continuous(breaks = seq(-140, 60, by = 20))+
+  ggplot2::scale_y_continuous(breaks = seq(10, 90, by = 20)) +
+  ggplot2::theme_bw() +
+  ggplot2::theme(panel.grid.major = element_line(colour = "lightgrey"),
+                 panel.border = element_rect(colour = "black"),
+                 axis.title = element_blank(),
+                 axis.ticks = element_blank(),
+                 axis.text = element_blank(),
+                 legend.position = "none")
+
+pro_sub_plot <- cowplot::ggdraw(pro_plot) +
+  cowplot::draw_plot(euro_plot, 0.63, 0.55, 0.35, 0.35)
+
+# save: pro_sub_plot
+cowplot::save_plot("outputs/fig_1_pro_sub.png", pro_sub_plot, base_height = 6, base_width = 4, dpi = 300)
+
+##### Fig 2 - Species richness #####
 
 ## Here we calculate species richness across and per year
 
@@ -466,10 +512,10 @@ spr_poll <- est_plot_func(grp = "Pollinators", est_df = spr_comb, est_diff = spr
 # predators
 spr_pred <- est_plot_func(grp = "Predators", est_df = spr_comb, est_diff = spr_diff_out, vari = "spr", lim = c(-31, 31), axlab = "Species richness")
 
-# save plot
+# save plot - fig 2
 cowplot::save_plot("outputs/fig_2_sprich_over.png", spr_over[[1]], base_height = 6, base_width = 8, dpi = 300)
 
-#### Multi-species trends ####
+##### Fig 3 - Multi-species trends #####
 
 ## Here we calculate geometric mean occupancy
 
@@ -676,7 +722,7 @@ chng_comb_over <- cowplot::plot_grid(msi_over, chng_over[[1]], nrow = 2, labels 
 # save plot
 cowplot::save_plot("outputs/fig_3_chng_comb_over.png", chng_comb_over, base_height = 11, base_width = 9, dpi = 300)
 
-#### Temporal beta diversity ####
+##### Fig 4 - Temporal beta diversity #####
 
 beta_tbi_func <- function(grp, it, occ_df_pa, occ_df_unp) {
 
@@ -835,7 +881,7 @@ beta_over_plot <- cowplot::plot_grid(NULL, beta_over[[1]], NULL, nrow = 1, rel_w
 # save plot
 cowplot::save_plot("outputs/fig_4_beta_over.png", beta_over_plot, base_height = 8, base_width = 12, dpi = 300)
 
-#### Pollinators combined plots #####
+##### Fig 5 - Pollinators combined plots #####
 
 # net change
 # pollinators
@@ -856,58 +902,168 @@ poll_plot <- cowplot::plot_grid(cowplot::plot_grid(NULL, spr_poll[[1]], NULL, la
 # save plot
 cowplot::save_plot("outputs/fig_5_poll.png", poll_plot, base_height = 12, base_width = 10, dpi = 300)
 
-#### Predators combined plots #####
+##### Fig 6 - Rare vs common ####
 
-# beta diversity
-beta_pred_plot <- cowplot::plot_grid(NULL, beta_pred[[1]], NULL, nrow = 1, rel_widths = c(0.4, 1, 0.4), labels = c("", "D", "")) %>% cowplot::plot_grid(., cowplot::plot_grid(loss_pred[[1]], gain_pred[[1]], nrow = 1, labels = c("E", "F")), nrow = 2)
+rang_GB <- occ_GB %>% 
+  tidyr::gather(year, occ, dplyr::starts_with("year_")) %>%
+  dplyr::group_by(species) %>% 
+  # median occupancy across years per species
+  dplyr::summarise(rang = median(occ, na.rm = TRUE))
 
-# species richness, trends, beta diversity
-pred_plot <- cowplot::plot_grid(cowplot::plot_grid(NULL, spr_pred[[1]], NULL, labels = c("", "A", ""), rel_widths = c(0.4, 1, 0.4), ncol = 3), cowplot::plot_grid(msi_pred, chng_pred[[1]], labels = c("B", "C"), ncol = 2), beta_pred_plot, nrow = 3, rel_heights = c(1, 1, 2))
+quant25 <- quantile(rang_GB$rang, 0.25)
+quant75 <- quantile(rang_GB$rang, 0.75)
 
-# save plot
-cowplot::save_plot("outputs/appendix_C_fig_s2_pred.png", pred_plot, base_height = 12, base_width = 10, dpi = 300)
+quant10 <- quantile(rang_GB$rang, 0.10)
+quant90 <- quantile(rang_GB$rang, 0.90)
 
-#### GB plot ####
+quantlow <- quant10
+quanthigh <- quant90
 
-# fig 1
-# plot of protected vs unprotected grid cells
+rare_spp <- dplyr::filter(rang_GB, rang < quantlow) %>% 
+  dplyr::mutate(grp = "rare")
 
-# sites used
-sites_gr <- readRDS("data/sites_gr.rds")
+comm_spp <- dplyr::filter(rang_GB, rang > quanthigh) %>% 
+  dplyr::mutate(grp = "common")
 
-pro_plot <- ggplot2::ggplot(data = sites_gr, aes(x = EASTING, y = NORTHING, fill = prot)) +
-  ggplot2::geom_raster() +
-  ggplot2::coord_equal() +
-  ggplot2::scale_fill_manual(breaks = c("pa", "unp"), labels = c("Protected", "Unprotected"), values = c("#0077BB", "#EE7733", "grey")) +
-  ggplot2::theme_void() +
-  ggplot2::theme(legend.title = element_blank(),
-                 legend.position = "bottom")
+rare_comm <- dplyr::bind_rows(dplyr::select(rare_spp, species, grp), dplyr::select(comm_spp, species, grp))
 
-euro <- ggplot2::map_data("world") %>% 
-  dplyr::mutate(GB = as.factor(ifelse(subregion %in% c("Great Britain", "Wales", "Isle of Wight", "Scotland"), 1, 0)))
+occ_pa <- occ_pa %>% 
+  dplyr::select(-grp) %>% 
+  dplyr::inner_join(rare_comm, by = "species") %>% 
+  dplyr::filter(!is.na(tax_grp)) %>% 
+  dplyr::filter(tax_grp != "Hoverflies2")
 
-euro_plot <- ggplot2::ggplot(euro, aes(x = long, y = lat)) +
-  ggplot2::geom_polygon(aes(group = group, fill = GB, colour = GB), size = 0.3) +
-  ggplot2::coord_map(project = "orthographic", xlim = c(-12,44), ylim = c(35,70)) +
-  ggplot2::scale_fill_manual(values = c("grey", "black")) +
-  ggplot2::scale_colour_manual(values = c("darkgrey", "black")) +
-  ggplot2::scale_x_continuous(breaks = seq(-140, 60, by = 20))+
-  ggplot2::scale_y_continuous(breaks = seq(10, 90, by = 20)) +
-  ggplot2::theme_bw() +
-  ggplot2::theme(panel.grid.major = element_line(colour = "lightgrey"),
-                 panel.border = element_rect(colour = "black"),
-                 axis.title = element_blank(),
-                 axis.ticks = element_blank(),
-                 axis.text = element_blank(),
-                 legend.position = "none")
+occ_unp <- occ_unp %>% 
+  dplyr::select(-grp) %>% 
+  dplyr::right_join(rare_comm, by = "species") %>% 
+  dplyr::filter(!is.na(tax_grp)) %>% 
+  dplyr::filter(tax_grp != "Hoverflies2")
 
-pro_sub_plot <- cowplot::ggdraw(pro_plot) +
-  cowplot::draw_plot(euro_plot, 0.63, 0.55, 0.35, 0.35)
+spr_pa <- sprich(occ_df = occ_pa)
+spr_unp <- sprich(occ_df = occ_unp)
 
-# save: pro_sub_plot
-cowplot::save_plot("outputs/fig_1_pro_sub.png", pro_sub_plot, base_height = 6, base_width = 4, dpi = 300)
+spr_comb <- dplyr::bind_rows(dplyr::select(spr_pa, grp, iteration, prot, spr), dplyr::select(spr_unp, grp, iteration, prot, spr))
 
-#### Number of records ####
+spr_diff_out <- sprich_diff(spr_df_pa = spr_pa, spr_df_unp = spr_unp)
+
+spr_rare <- est_plot_func(grp = "rare", est_df = spr_comb, est_diff = spr_diff_out, vari = "spr", lim = c(-1.5, 1.5), axlab = "Species\nrichness", yaxs = FALSE)
+# 5.7
+
+spr_comm <- est_plot_func(grp = "common", est_df = spr_comb, est_diff = spr_diff_out, vari = "spr", lim = c(-2.6, 2.6), axlab = " \n ")
+# 9.8
+
+msi_pa <- msi(occ_df = occ_pa)
+msi_unp <- msi(occ_df = occ_unp)
+
+msi_sum_pa <- msi_sum(msi_df = msi_pa)
+msi_sum_unp <- msi_sum(msi_df = msi_unp)
+
+msi_sum_comb <- dplyr::bind_rows(msi_sum_pa, msi_sum_unp)
+
+msi_rare <- trend_plot_func(grp = "rare", msi_sum = msi_sum_comb, lim = c(0.0006, 0.0047), leg = FALSE, axlab = "Geometric\nmean occupancy")
+# 0.0029, 0.011
+
+msi_comm <- trend_plot_func(grp = "common", msi_sum = msi_sum_comb, lim = c(0.43, 0.58), leg = FALSE, axlab = " \n ")
+# 0.30, 0.43
+
+trend_pa <- trend_change(occ_df = occ_pa %>% dplyr::select(-tax_grp), taxa = unique(occ_unp$grp))
+trend_unp <- trend_change(occ_df = occ_unp %>% dplyr::select(-tax_grp), taxa = unique(occ_unp$grp))
+
+chng_pa <- tax_change(trend_df = trend_pa)
+chng_unp <- tax_change(trend_df = trend_unp)
+
+chng_comb <- dplyr::bind_rows(
+  dplyr::select(chng_pa, grp, iteration, change) %>%
+    dplyr::mutate(prot = "Protected"),
+  dplyr::select(chng_unp, grp, iteration, change) %>%
+    dplyr::mutate(prot = "Unprotected")) %>%
+  dplyr::mutate(prot = factor(prot, levels = c("Unprotected", "Protected")))
+
+chng_diff_out <- change_diff(chng_df_pa = chng_pa, chng_df_unp = chng_unp)
+
+chng_rare <- est_plot_func(grp = "rare", est_df = chng_comb, est_diff = chng_diff_out, vari = "change", lim = c(-4.8, 4.8), axlab = "Growth rate", xaxs = FALSE, yaxs = FALSE)
+# -1.5, 1.5
+
+chng_comm <- est_plot_func(grp = "common", est_df = chng_comb, est_diff = chng_diff_out, vari = "change", lim = c(-0.5, 0.5), axlab = " ", xaxs = FALSE)
+# -0.6, 0.6
+
+# beta_tbi <- lapply(unique(occ_pa$grp), function(xgrp) {
+# 
+#   out <- lapply(1:999, function(x) beta_tbi_func(grp = xgrp, it = x, occ_df_pa = occ_pa, occ_df_unp = occ_unp)) %>%
+#     # bind across iterations
+#   dplyr::bind_rows()
+# 
+# }) %>%
+#   # bind across groups
+#   dplyr::bind_rows()
+# 
+# saveRDS(beta_tbi, "data/beta_tbi_rare_comm_90.rds")
+
+beta_tbi <- readRDS("data/beta_tbi_rare_comm.rds") %>%
+  dplyr::mutate(prot = factor(prot, levels = c("Unprotected", "Protected"))) %>%
+  # convert to percentages
+  dplyr::mutate_at(vars(tbi_val, loss, gain), ~. * 100)
+
+beta_contr <- dplyr::left_join(dplyr::filter(beta_tbi, prot == "Protected"), dplyr::filter(beta_tbi, prot == "Unprotected"), by = c("iteration", "grp"))
+
+beta_diff_out <- beta_diff(beta_df = beta_contr)
+
+# total
+
+beta_rare <- est_plot_func(grp = "rare", est_df = beta_tbi, est_diff = beta_diff_out, vari = "tbi_val", lim = c(-39.6, 39.6), axlab = "Temporal\nbeta diversity (%)", xaxs = FALSE, yaxs = FALSE)
+# -20.8, 20.8
+
+beta_comm <- est_plot_func(grp = "common", est_df = beta_tbi, est_diff = beta_diff_out, vari = "tbi_val", lim = c(-6.7, 6.7), axlab = " \n ", xaxs = FALSE)
+# -4.3, 4.3
+
+# loss
+
+loss_rare <- est_plot_func(grp = "rare", est_df = beta_tbi, est_diff = beta_diff_out, vari = "loss", lim = c(-23.9, 23.9), axlab = "Loss (%)", xaxs = FALSE, yaxs = FALSE)
+# -13.0, 13.0
+
+loss_comm <- est_plot_func(grp = "common", est_df = beta_tbi, est_diff = beta_diff_out, vari = "loss", lim = c(-4.8, 4.8), axlab = " ", xaxs = FALSE)
+# -4.2, 4.2
+
+# gain
+
+gain_rare <- est_plot_func(grp = "rare", est_df = beta_tbi, est_diff = beta_diff_out, vari = "gain", lim = c(-43.3, 43.3), axlab = "Gain (%)", yaxs = FALSE)
+# -24.1, 24.1
+
+gain_comm <- est_plot_func(grp = "common", est_df = beta_tbi, est_diff = beta_diff_out, vari = "gain", lim = c(-2.6, 2.6), axlab = " ")
+# -2.2, 2.2
+
+nc_rare <- beta_tbi %>% 
+  dplyr::filter(grp == "rare") %>% 
+  dplyr::mutate(nc = gain - loss) %>% 
+  dplyr::group_by(prot) %>% 
+  dplyr::summarise_at(vars(nc), list(meds = ~median,
+                                     low_ci = ~HDInterval::hdi(., credMass = ci)[[1]],
+                                     upp_ci = ~HDInterval::hdi(., credMass = ci)[[2]]))
+
+nc_common <- beta_tbi %>% 
+  dplyr::filter(grp == "common") %>% 
+  dplyr::mutate(nc = gain - loss) %>% 
+  dplyr::group_by(prot) %>% 
+  dplyr::summarise_at(vars(nc), list(meds = ~median,
+                                     low_ci = ~HDInterval::hdi(., credMass = ci)[[1]],
+                                     upp_ci = ~HDInterval::hdi(., credMass = ci)[[2]]))
+
+tit_rare <- ggplot() +
+  annotate("text", x = 1, y = 1, size = 8,
+           label = "Very rare species") + 
+  theme_void()
+
+tit_comm <- ggplot() +
+  annotate("text", x = 1, y = 1, size = 8,
+           label = "Very common species") + 
+  theme_void()
+
+rare_comm_comb <- cowplot::plot_grid(tit_rare, tit_comm, spr_rare[[1]], spr_comm[[1]], msi_rare, msi_comm, chng_rare[[1]], chng_comm[[1]], beta_rare[[1]], beta_comm[[1]], loss_rare[[1]], loss_comm[[1]], gain_rare[[1]], gain_comm[[1]], ncol = 2, labels = c("", "", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"), rel_heights = c(0.2, 1, 1, 1, 1, 1, 1))
+
+# # save plots
+# cowplot::save_plot("outputs/rare_comm_comb_90.png", rare_comm_comb, base_height = 14, base_width = 11, dpi = 600)
+
+##### Number of records #####
 
 # meta_pa <- lapply(taxa, function(x) {
 # 
@@ -946,194 +1102,48 @@ rec_all <- readRDS("data/rec_all.rds")
 
 sum(rec_all$rec_all)
 
-#### Species whose models converged ####
 
-## Rhat < 1.1 for first and last years
+#### Appendix A - Histograms of protected area coverage ####
 
-##### Extract and preprocess rhats #####
+pa_pr_hist <- dplyr::left_join(pro_stat, dplyr::mutate(pa_pr_1990_orig, pa_prop_1990 = pa_prop * 100), by = c("grid_ref", "region", "easting", "northing")) %>% 
+  dplyr::left_join(dplyr::mutate(pa_pr_2018_orig, pa_prop_2018 = pa_prop * 100), by = c("grid_ref", "region", "easting", "northing")) %>% 
+  # only protected cells
+  dplyr::filter(prot == "pa") %>% 
+  # change in protected area coverage within focal period
+  dplyr::mutate(chng = pa_prop_2018 - pa_prop_1990)
 
-# rhat <- function(tax_path, tax_grp, filetype, chained = FALSE, max_iter) {
-#   
-#   spp <- dplyr::filter(occ_pa, tax_grp == !!tax_grp)$species %>% 
-#     unique(.) %>% 
-#     firstup(.)
-#   
-#   bugs <- lapply(spp, function(sp) {
-#     
-#     if(isTRUE(chained)) {
-#       
-#       out_dat <- load_rdata(paste0(tax_path, sp, "_", max_iter, "_1.rdata"))
-#       
-#       if(!is.null(out_dat) & is.null(out_dat$model)) out_dat <- out_dat$out
-#       
-#     } else {
-#       
-#       if(filetype == "rds") {
-#         
-#         out_dat <- readRDS(paste0(tax_path, sp, ".rds"))
-#         
-#         }
-#     
-#       else if(filetype == "rdata") {
-#       
-#         out_dat <- load_rdata(paste0(tax_path, sp, ".rdata"))
-#       
-#       }
-#     }
-#     
-#     bugs <- out_dat$BUGSoutput$summary %>% 
-#       data.frame() %>% 
-#       tibble::rownames_to_column("para") %>% 
-#       dplyr::filter(stringr::str_detect(para, "psi.fs")) %>% 
-#       dplyr::filter(!stringr::str_detect(para, "psi.fs.r_ENGLAND|psi.fs.r_GB|psi.fs.r_NORTHERN_IRELAND|psi.fs.r_SCOTLAND|psi.fs.r_UK|psi.fs.r_WALES|psi.fs.r_high|psi.fs.r_low|psi.fs.r_no_agri|psi.fs.r_pa|psi.fs.r_unp")) %>% 
-#       dplyr::mutate(species = tolower(sp)) %>% 
-#       dplyr::mutate(tax_grp = tax_grp)
-#     
-#   }) %>% 
-#     dplyr::bind_rows()
-#   
-#   return(bugs)
-#   
-# }
-# 
-# ants_rhat <- rhat(tax_path = "/data-s3/occmods/Ants/occmod_outputs/2021_Francesca_bwars_rerun/", tax_grp = "Ants", filetype = "rdata")
-# 
-# # saveRDS(ants_rhat, "data/ants_rhat.rds")
-# 
-# bees_rhat <- rhat(tax_path = "/data-s3/occmods/Bees/occmod_outputs/2021_Francesca_bwars_rerun/", tax_grp = "Bees", filetype = "rdata")
-# 
-# # saveRDS(bees_rhat, "data/bees_rhat.rds")
-# 
-# hover_rhat <- rhat(tax_path = "/data-s3/occmods/Hoverflies/occmod_outputs/2021_Francesca/", tax_grp = "Hoverflies", filetype = "rdata", chained = TRUE, max_iter = 32000)
-# 
-# # saveRDS(hover_rhat, "data/hover_rhat.rds")
-# 
-# lady_rhat <- rhat(tax_path = "/data-s3/occmods/Ladybirds/occmod_outputs/2021_Francesca/", tax_grp = "Ladybirds", filetype = "rdata", chained = TRUE, max_iter = 32000)
-# 
-# # saveRDS(lady_rhat, "data/lady_rhat.rds")
-# 
-# spider_rhat <- rhat(tax_path = "/data-s3/occmods/Spiders/occmod_outputs/2021_Francesca_marlog_rerun/", tax_grp = "Spiders", filetype = "rdata")
-# 
-# # saveRDS(spider_rhat, "data/spider_rhat.rds")
-# 
-# wasps_rhat <- rhat(tax_path = "/data-s3/occmods/Wasps/occmod_outputs/2021_Francesca_bwars_rerun/", tax_grp = "Wasps", filetype = "rdata")
-# 
-# # saveRDS(wasps_rhat, "data/wasps_rhat.rds")
-# 
-# all_rhat <- dplyr::bind_rows(ants_rhat, bees_rhat, hover_rhat, lady_rhat, spider_rhat, wasps_rhat)
-# 
-# # saveRDS(all_rhat, "data/all_rhat.rds")
+gap <- 5
 
-all_rhat <- readRDS("data/all_rhat.rds")
+brks_1990 <- unique(seq(0, ceiling(max(pa_pr_hist$pa_prop_1990)), by = gap))
 
-# first and last rhats
-fl_rhat <- all_rhat %>% 
-  dplyr::group_by(species) %>% 
-  slice(c(1,n()))
+# plot protected area coverage 1990 histogram
+pa_1990_hist <- ggplot2::ggplot(data = pa_pr_hist, ggplot2::aes(pa_prop_1990)) +
+  ggplot2::geom_histogram(binwidth = gap, breaks = brks_1990) +
+  ggplot2::labs(x = "Protected area\ncoverage 1990 (%)", y = "Number of\nprotected grid cells") +
+  ggplot2::lims(y = c(0, 7600))
 
-conv_spp <- fl_rhat %>% 
-  dplyr::group_by(species) %>%
-  dplyr::filter(all(Rhat < 1.1))
+# find maximum max(ggplot_build(pa_2018_hist)$data[[1]]$count)
 
-##### rhat analyses #####
+# plot protected area coverage 1990 histogram
+pa_2018_hist <- ggplot2::ggplot(data = pa_pr_hist, ggplot2::aes(pa_prop_2018)) +
+  ggplot2::geom_histogram(binwidth = gap, breaks = brks_1990) +
+  ggplot2::labs(x = "Protected area\ncoverage 2018 (%)", y = "Number of\nprotected grid cells") +
+  ggplot2::lims(y = c(0, 7600))
 
-# filter to species whose models converged
-occ_pa_conv <- dplyr::filter(occ_pa, species %in% conv_spp$species)
-occ_unp_conv <- dplyr::filter(occ_unp, species %in% conv_spp$species)
+brks_chng <- unique(seq(0, ceiling(max(pa_pr_hist$chng)), by = gap))
 
-# species richness
-spr_pa_conv <- sprich(occ_df = occ_pa_conv) %>% 
-  dplyr::left_join(GB_func_spp, by = "grp")
-spr_unp_conv <- sprich(occ_df = occ_unp_conv) %>% 
-  dplyr::left_join(GB_func_spp, by = "grp")
+# plot change in protected area coverage between 1990 and 2018 histogram
+pa_chng_hist <- ggplot2::ggplot(data = pa_pr_hist, ggplot2::aes(chng)) +
+  ggplot2::geom_histogram(binwidth = gap, breaks = brks_chng) +
+  ggplot2::labs(x = "Change in protected area\ncoverage between 1990 and 2018 (%)", y = "Number of\nprotected grid cells")
 
-spr_comb_conv <- dplyr::bind_rows(dplyr::select(spr_pa_conv, grp, iteration, prot, spr), dplyr::select(spr_unp_conv, grp, iteration, prot, spr))
-
-spr_diff_out_conv <- sprich_diff(spr_df_pa = spr_pa_conv, spr_df_unp = spr_unp_conv)
-
-spr_over_conv <- est_plot_func(grp = "Overall", est_df = spr_comb_conv, est_diff = spr_diff_out_conv, vari = "spr", lim = c(-14, 14), axlab = "Species richness")
-
-# multi-species indicator
-msi_pa_conv <- msi(occ_df = occ_pa_conv)
-msi_unp_conv <- msi(occ_df = occ_unp_conv)
-
-msi_sum_pa_conv <- msi_sum(msi_df = msi_pa_conv)
-msi_sum_unp_conv <- msi_sum(msi_df = msi_unp_conv)
-
-msi_sum_comb_conv <- dplyr::bind_rows(msi_sum_pa_conv, msi_sum_unp_conv)
-
-msi_over_conv <- trend_plot_func(grp = "Overall", msi_sum = msi_sum_comb_conv, lim = c(0.055, 0.12), leg = FALSE, axlab = "Geometric\nmean occupancy")
-
-# growth rates
-trend_pa_conv <- trend_change(occ_df = dplyr::select(occ_pa_conv, -tax_grp), taxa = unique(occ_unp_conv$grp))
-trend_unp_conv <- trend_change(occ_df = dplyr::select(occ_unp_conv, -tax_grp), taxa = unique(occ_unp_conv$grp))
-
-chng_pa_conv <- tax_change(trend_df = trend_pa_conv)
-chng_unp_conv <- tax_change(trend_df = trend_unp_conv)
-
-chng_comb_conv <- dplyr::bind_rows(
-  dplyr::select(chng_pa_conv, grp, iteration, change) %>% 
-    dplyr::mutate(prot = "Protected"), 
-  dplyr::select(chng_unp_conv, grp, iteration, change) %>% 
-    dplyr::mutate(prot = "Unprotected")) %>% 
-  dplyr::mutate(prot = factor(prot, levels = c("Unprotected", "Protected")))
-
-chng_diff_out_conv <- change_diff(chng_df_pa = chng_pa_conv, chng_df_unp = chng_unp_conv)
-
-chng_over_conv <- est_plot_func(grp = "Overall", est_df = chng_comb_conv, est_diff = chng_diff_out_conv, vari = "change", lim = c(-2.8, 2.8), axlab = "Growth rate")
-
-chng_comb_over_conv <- cowplot::plot_grid(msi_over_conv, chng_over_conv[[1]], nrow = 2, labels = "AUTO")
-
-# # beta diversity
-# beta_tbi_conv <- lapply(unique(occ_pa_conv$grp), function(xgrp) {
-# 
-#   out <- lapply(1:999, function(x) beta_tbi_func(grp = xgrp, it = x, occ_df_pa = occ_pa_conv, occ_df_unp = occ_unp_conv)) %>%
-#     # bind across iterations
-#   dplyr::bind_rows()
-# 
-# }) %>%
-#   # bind across groups
-#   dplyr::bind_rows()
-# 
-# saveRDS(beta_tbi_conv, "data/beta_tbi_conv.rds")
-
-beta_tbi_conv <- readRDS("data/beta_tbi_conv.rds") %>% 
-  dplyr::mutate(prot = factor(prot, levels = c("Unprotected", "Protected"))) %>% 
-  # convert to percentages
-  dplyr::mutate_at(vars(tbi_val, loss, gain), ~. * 100)
-
-beta_contr_conv <- dplyr::left_join(dplyr::filter(beta_tbi_conv, prot == "Protected"), dplyr::filter(beta_tbi_conv, prot == "Unprotected"), by = c("iteration", "grp"))
-
-beta_diff_out_conv <- beta_diff(beta_df = beta_contr_conv)
-
-## total temporal beta diversity
-
-beta_over_conv <- est_plot_func(grp = "Overall", est_df = beta_tbi_conv, est_diff = beta_diff_out_conv, vari = "tbi_val", lim = c(-2.8, 2.8), axlab = "Temporal\nbeta diversity (%)")
-
-## loss
-
-loss_over_conv <- est_plot_func(grp = "Overall", est_df = beta_tbi_conv, est_diff = beta_diff_out_conv, vari = "loss", lim = c(-2.3, 2.3), axlab = "Loss (%)")
-
-# View(loss_over_conv[[2]])
-# View(loss_over_conv[[3]])
-# View(loss_over_conv[[4]])
-
-## gain
-
-gain_over_conv <- est_plot_func(grp = "Overall", est_df = beta_tbi_conv, est_diff = beta_diff_out_conv, vari = "gain", lim = c(-1.4, 1.4), axlab = "Gain (%)")
-
-# View(gain_over_conv[[2]])
-# View(gain_over_conv[[3]])
-# View(gain_over_conv[[4]])
-
-beta_over_plot_conv <- cowplot::plot_grid(NULL, beta_over_conv[[1]], NULL, nrow = 1, rel_widths = c(0.4, 1, 0.4), labels = c("", "D", "")) %>% cowplot::plot_grid(., cowplot::plot_grid(loss_over_conv[[1]], gain_over_conv[[1]], nrow = 1, labels = c("E", "F")), nrow = 2)
-
-conv_plot <- cowplot::plot_grid(cowplot::plot_grid(NULL, spr_over_conv[[1]], NULL, labels = c("", "A", ""), rel_widths = c(0.4, 1, 0.4), ncol = 3), cowplot::plot_grid(msi_over_conv, chng_over_conv[[1]], labels = c("B", "C"), ncol = 2), beta_over_plot_conv, nrow = 3, rel_heights = c(1, 1, 2))
+# combine plots
+pa_hist <- cowplot::plot_grid(cowplot::plot_grid(pa_1990_hist, pa_2018_hist, nrow = 1, labels = "AUTO"), cowplot::plot_grid(NULL, pa_chng_hist, NULL, rel_widths = c(0.5, 1, 0.5), nrow = 1, labels = c("", "C", "")), nrow = 2)
 
 # save plot
-cowplot::save_plot("outputs/appendix_C_fig_s1_conv.png", conv_plot, base_height = 12, base_width = 10, dpi = 300)
+cowplot::save_plot("outputs/pa_hist.png", pa_hist, base_height = 7, base_width = 10, dpi = 600)
 
-#### ROBITT ####
+#### Appendix C - ROBITT ####
 
 ##### Preprocessing input data for ROBITT - occAssess #####
 
@@ -1654,5 +1664,207 @@ stack_comb <- cowplot::plot_grid(stack_ants + ggplot2::theme(legend.position = "
 
 # save
 cowplot::save_plot("outputs/appendix_B_fig_s5_stacks.png", stack_comb, base_height = 8, base_aspect_ratio = 1.1, dpi = 300)
+
+#### Appendix D ####
+
+
+
+###### Species whose models converged ######
+
+## Rhat < 1.1 for first and last years
+
+##### Extract and preprocess rhats #####
+
+# rhat <- function(tax_path, tax_grp, filetype, chained = FALSE, max_iter) {
+#   
+#   spp <- dplyr::filter(occ_pa, tax_grp == !!tax_grp)$species %>% 
+#     unique(.) %>% 
+#     firstup(.)
+#   
+#   bugs <- lapply(spp, function(sp) {
+#     
+#     if(isTRUE(chained)) {
+#       
+#       out_dat <- load_rdata(paste0(tax_path, sp, "_", max_iter, "_1.rdata"))
+#       
+#       if(!is.null(out_dat) & is.null(out_dat$model)) out_dat <- out_dat$out
+#       
+#     } else {
+#       
+#       if(filetype == "rds") {
+#         
+#         out_dat <- readRDS(paste0(tax_path, sp, ".rds"))
+#         
+#         }
+#     
+#       else if(filetype == "rdata") {
+#       
+#         out_dat <- load_rdata(paste0(tax_path, sp, ".rdata"))
+#       
+#       }
+#     }
+#     
+#     bugs <- out_dat$BUGSoutput$summary %>% 
+#       data.frame() %>% 
+#       tibble::rownames_to_column("para") %>% 
+#       dplyr::filter(stringr::str_detect(para, "psi.fs")) %>% 
+#       dplyr::filter(!stringr::str_detect(para, "psi.fs.r_ENGLAND|psi.fs.r_GB|psi.fs.r_NORTHERN_IRELAND|psi.fs.r_SCOTLAND|psi.fs.r_UK|psi.fs.r_WALES|psi.fs.r_high|psi.fs.r_low|psi.fs.r_no_agri|psi.fs.r_pa|psi.fs.r_unp")) %>% 
+#       dplyr::mutate(species = tolower(sp)) %>% 
+#       dplyr::mutate(tax_grp = tax_grp)
+#     
+#   }) %>% 
+#     dplyr::bind_rows()
+#   
+#   return(bugs)
+#   
+# }
+# 
+# ants_rhat <- rhat(tax_path = "/data-s3/occmods/Ants/occmod_outputs/2021_Francesca_bwars_rerun/", tax_grp = "Ants", filetype = "rdata")
+# 
+# # saveRDS(ants_rhat, "data/ants_rhat.rds")
+# 
+# bees_rhat <- rhat(tax_path = "/data-s3/occmods/Bees/occmod_outputs/2021_Francesca_bwars_rerun/", tax_grp = "Bees", filetype = "rdata")
+# 
+# # saveRDS(bees_rhat, "data/bees_rhat.rds")
+# 
+# hover_rhat <- rhat(tax_path = "/data-s3/occmods/Hoverflies/occmod_outputs/2021_Francesca/", tax_grp = "Hoverflies", filetype = "rdata", chained = TRUE, max_iter = 32000)
+# 
+# # saveRDS(hover_rhat, "data/hover_rhat.rds")
+# 
+# lady_rhat <- rhat(tax_path = "/data-s3/occmods/Ladybirds/occmod_outputs/2021_Francesca/", tax_grp = "Ladybirds", filetype = "rdata", chained = TRUE, max_iter = 32000)
+# 
+# # saveRDS(lady_rhat, "data/lady_rhat.rds")
+# 
+# spider_rhat <- rhat(tax_path = "/data-s3/occmods/Spiders/occmod_outputs/2021_Francesca_marlog_rerun/", tax_grp = "Spiders", filetype = "rdata")
+# 
+# # saveRDS(spider_rhat, "data/spider_rhat.rds")
+# 
+# wasps_rhat <- rhat(tax_path = "/data-s3/occmods/Wasps/occmod_outputs/2021_Francesca_bwars_rerun/", tax_grp = "Wasps", filetype = "rdata")
+# 
+# # saveRDS(wasps_rhat, "data/wasps_rhat.rds")
+# 
+# all_rhat <- dplyr::bind_rows(ants_rhat, bees_rhat, hover_rhat, lady_rhat, spider_rhat, wasps_rhat)
+# 
+# # saveRDS(all_rhat, "data/all_rhat.rds")
+
+all_rhat <- readRDS("data/all_rhat.rds")
+
+# first and last rhats
+fl_rhat <- all_rhat %>% 
+  dplyr::group_by(species) %>% 
+  slice(c(1,n()))
+
+conv_spp <- fl_rhat %>% 
+  dplyr::group_by(species) %>%
+  dplyr::filter(all(Rhat < 1.1))
+
+##### rhat analyses #####
+
+# filter to species whose models converged
+occ_pa_conv <- dplyr::filter(occ_pa, species %in% conv_spp$species)
+occ_unp_conv <- dplyr::filter(occ_unp, species %in% conv_spp$species)
+
+# species richness
+spr_pa_conv <- sprich(occ_df = occ_pa_conv) %>% 
+  dplyr::left_join(GB_func_spp, by = "grp")
+spr_unp_conv <- sprich(occ_df = occ_unp_conv) %>% 
+  dplyr::left_join(GB_func_spp, by = "grp")
+
+spr_comb_conv <- dplyr::bind_rows(dplyr::select(spr_pa_conv, grp, iteration, prot, spr), dplyr::select(spr_unp_conv, grp, iteration, prot, spr))
+
+spr_diff_out_conv <- sprich_diff(spr_df_pa = spr_pa_conv, spr_df_unp = spr_unp_conv)
+
+spr_over_conv <- est_plot_func(grp = "Overall", est_df = spr_comb_conv, est_diff = spr_diff_out_conv, vari = "spr", lim = c(-14, 14), axlab = "Species richness")
+
+# multi-species indicator
+msi_pa_conv <- msi(occ_df = occ_pa_conv)
+msi_unp_conv <- msi(occ_df = occ_unp_conv)
+
+msi_sum_pa_conv <- msi_sum(msi_df = msi_pa_conv)
+msi_sum_unp_conv <- msi_sum(msi_df = msi_unp_conv)
+
+msi_sum_comb_conv <- dplyr::bind_rows(msi_sum_pa_conv, msi_sum_unp_conv)
+
+msi_over_conv <- trend_plot_func(grp = "Overall", msi_sum = msi_sum_comb_conv, lim = c(0.055, 0.12), leg = FALSE, axlab = "Geometric\nmean occupancy")
+
+# growth rates
+trend_pa_conv <- trend_change(occ_df = dplyr::select(occ_pa_conv, -tax_grp), taxa = unique(occ_unp_conv$grp))
+trend_unp_conv <- trend_change(occ_df = dplyr::select(occ_unp_conv, -tax_grp), taxa = unique(occ_unp_conv$grp))
+
+chng_pa_conv <- tax_change(trend_df = trend_pa_conv)
+chng_unp_conv <- tax_change(trend_df = trend_unp_conv)
+
+chng_comb_conv <- dplyr::bind_rows(
+  dplyr::select(chng_pa_conv, grp, iteration, change) %>% 
+    dplyr::mutate(prot = "Protected"), 
+  dplyr::select(chng_unp_conv, grp, iteration, change) %>% 
+    dplyr::mutate(prot = "Unprotected")) %>% 
+  dplyr::mutate(prot = factor(prot, levels = c("Unprotected", "Protected")))
+
+chng_diff_out_conv <- change_diff(chng_df_pa = chng_pa_conv, chng_df_unp = chng_unp_conv)
+
+chng_over_conv <- est_plot_func(grp = "Overall", est_df = chng_comb_conv, est_diff = chng_diff_out_conv, vari = "change", lim = c(-2.8, 2.8), axlab = "Growth rate")
+
+chng_comb_over_conv <- cowplot::plot_grid(msi_over_conv, chng_over_conv[[1]], nrow = 2, labels = "AUTO")
+
+# # beta diversity
+# beta_tbi_conv <- lapply(unique(occ_pa_conv$grp), function(xgrp) {
+# 
+#   out <- lapply(1:999, function(x) beta_tbi_func(grp = xgrp, it = x, occ_df_pa = occ_pa_conv, occ_df_unp = occ_unp_conv)) %>%
+#     # bind across iterations
+#   dplyr::bind_rows()
+# 
+# }) %>%
+#   # bind across groups
+#   dplyr::bind_rows()
+# 
+# saveRDS(beta_tbi_conv, "data/beta_tbi_conv.rds")
+
+beta_tbi_conv <- readRDS("data/beta_tbi_conv.rds") %>% 
+  dplyr::mutate(prot = factor(prot, levels = c("Unprotected", "Protected"))) %>% 
+  # convert to percentages
+  dplyr::mutate_at(vars(tbi_val, loss, gain), ~. * 100)
+
+beta_contr_conv <- dplyr::left_join(dplyr::filter(beta_tbi_conv, prot == "Protected"), dplyr::filter(beta_tbi_conv, prot == "Unprotected"), by = c("iteration", "grp"))
+
+beta_diff_out_conv <- beta_diff(beta_df = beta_contr_conv)
+
+## total temporal beta diversity
+
+beta_over_conv <- est_plot_func(grp = "Overall", est_df = beta_tbi_conv, est_diff = beta_diff_out_conv, vari = "tbi_val", lim = c(-2.8, 2.8), axlab = "Temporal\nbeta diversity (%)")
+
+## loss
+
+loss_over_conv <- est_plot_func(grp = "Overall", est_df = beta_tbi_conv, est_diff = beta_diff_out_conv, vari = "loss", lim = c(-2.3, 2.3), axlab = "Loss (%)")
+
+# View(loss_over_conv[[2]])
+# View(loss_over_conv[[3]])
+# View(loss_over_conv[[4]])
+
+## gain
+
+gain_over_conv <- est_plot_func(grp = "Overall", est_df = beta_tbi_conv, est_diff = beta_diff_out_conv, vari = "gain", lim = c(-1.4, 1.4), axlab = "Gain (%)")
+
+# View(gain_over_conv[[2]])
+# View(gain_over_conv[[3]])
+# View(gain_over_conv[[4]])
+
+beta_over_plot_conv <- cowplot::plot_grid(NULL, beta_over_conv[[1]], NULL, nrow = 1, rel_widths = c(0.4, 1, 0.4), labels = c("", "D", "")) %>% cowplot::plot_grid(., cowplot::plot_grid(loss_over_conv[[1]], gain_over_conv[[1]], nrow = 1, labels = c("E", "F")), nrow = 2)
+
+conv_plot <- cowplot::plot_grid(cowplot::plot_grid(NULL, spr_over_conv[[1]], NULL, labels = c("", "A", ""), rel_widths = c(0.4, 1, 0.4), ncol = 3), cowplot::plot_grid(msi_over_conv, chng_over_conv[[1]], labels = c("B", "C"), ncol = 2), beta_over_plot_conv, nrow = 3, rel_heights = c(1, 1, 2))
+
+# save plot
+cowplot::save_plot("outputs/appendix_C_fig_s1_conv.png", conv_plot, base_height = 12, base_width = 10, dpi = 300)
+
+##### Appendix C Fig S3 - Predators combined plots #####
+
+# beta diversity
+beta_pred_plot <- cowplot::plot_grid(NULL, beta_pred[[1]], NULL, nrow = 1, rel_widths = c(0.4, 1, 0.4), labels = c("", "D", "")) %>% cowplot::plot_grid(., cowplot::plot_grid(loss_pred[[1]], gain_pred[[1]], nrow = 1, labels = c("E", "F")), nrow = 2)
+
+# species richness, trends, beta diversity
+pred_plot <- cowplot::plot_grid(cowplot::plot_grid(NULL, spr_pred[[1]], NULL, labels = c("", "A", ""), rel_widths = c(0.4, 1, 0.4), ncol = 3), cowplot::plot_grid(msi_pred, chng_pred[[1]], labels = c("B", "C"), ncol = 2), beta_pred_plot, nrow = 3, rel_heights = c(1, 1, 2))
+
+# save plot
+cowplot::save_plot("outputs/appendix_C_fig_s3_pred.png", pred_plot, base_height = 12, base_width = 10, dpi = 300)
 
 #### End ####
