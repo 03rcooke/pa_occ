@@ -1,6 +1,6 @@
 # pa_occ
 
-Code underpinning Cooke et al. "Protected areas support more species than unprotected areas in Great Britain, but lose them equally rapidly"
+Code underpinning Cooke et al., 2023. Protected areas support more species than unprotected areas in Great Britain, but lose them equally rapidly. Biol. Conserv.
 
 pa_occ.R contains the script to summarise the occupancy model outputs and produce the figures, including:
 
