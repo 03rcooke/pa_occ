@@ -1,7 +1,5 @@
 # pa_occ
 
-pa_occ.R contains the script to summarise the occupancy model outputs and produce the figures, including:
-
 Species richness  
 Species trends  
 Temporal beta diversity  
