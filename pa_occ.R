@@ -1074,7 +1074,7 @@ tit_comm <- ggplot2::ggplot() +
 rare_comm_comb <- cowplot::plot_grid(tit_rare, tit_comm, spr_rare[[1]], spr_comm[[1]], msi_rare, msi_comm, chng_rare[[1]], chng_comm[[1]], beta_rare[[1]], beta_comm[[1]], loss_rare[[1]], loss_comm[[1]], gain_rare[[1]], gain_comm[[1]], ncol = 2, labels = c("", "", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"), rel_heights = c(0.2, 1, 1, 1, 1, 1, 1))
 
 # save plots
-cowplot::save_plot("outputs/fig_6_rare_comm.png", rare_comm_comb, base_height = 14, base_width = 11, dpi = 600)
+cowplot::save_plot("outputs/fig_6_rare_comm.png", rare_comm_comb, base_height = 14, base_width = 11, dpi = 300)
 
 #### Appendix A - Histograms of protected area coverage ####
 
@@ -1117,7 +1117,7 @@ pa_chng_hist <- ggplot2::ggplot(data = pa_pr_hist, ggplot2::aes(chng)) +
 pa_hist <- cowplot::plot_grid(cowplot::plot_grid(pa_1990_hist, pa_2018_hist, nrow = 1, labels = "AUTO"), cowplot::plot_grid(NULL, pa_chng_hist, NULL, rel_widths = c(0.5, 1, 0.5), nrow = 1, labels = c("", "C", "")), nrow = 2)
 
 # save plot
-cowplot::save_plot("outputs/appendix_A_fig_s1_pa_hist.png", pa_hist, base_height = 7, base_width = 10, dpi = 600)
+cowplot::save_plot("outputs/appendix_A_fig_s1_pa_hist.png", pa_hist, base_height = 7, base_width = 10, dpi = 300)
 
 #### Appendix C - ROBITT ####
 
@@ -2103,7 +2103,7 @@ tit_ants_50 <- ggplot2::ggplot() +
 ants_comb <- cowplot::plot_grid(tit_ants, tit_ants_50, spr_ants[[1]], spr_ants_50[[1]], msi_ants, msi_ants_50, chng_ants[[1]], chng_ants_50[[1]], beta_ants[[1]], beta_ants_50[[1]], loss_ants[[1]], loss_ants_50[[1]], gain_ants[[1]], gain_ants_50[[1]], ncol = 2, labels = c("", "", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"), rel_heights = c(0.2, 1, 1, 1, 1, 1, 1))
 
 # save plots
-cowplot::save_plot("outputs/appendix_D_fig_s2_ants_comb.png", ants_comb, base_height = 14, base_width = 10, dpi = 600)
+cowplot::save_plot("outputs/appendix_D_fig_s2_ants_comb.png", ants_comb, base_height = 14, base_width = 10, dpi = 300)
 
 ##### Appendix D Fig S3 - Predators combined plots #####
 
@@ -2271,6 +2271,6 @@ tit_vcomm <- ggplot2::ggplot() +
 vrare_vcomm_comb <- cowplot::plot_grid(tit_vrare, tit_vcomm, spr_vrare[[1]], spr_vcomm[[1]], msi_vrare, msi_vcomm, chng_vrare[[1]], chng_vcomm[[1]], beta_vrare[[1]], beta_vcomm[[1]], loss_vrare[[1]], loss_vcomm[[1]], gain_vrare[[1]], gain_vcomm[[1]], ncol = 2, labels = c("", "", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"), rel_heights = c(0.2, 1, 1, 1, 1, 1, 1))
 
 # save plot
-cowplot::save_plot("outputs/appendix_D_fig_s4_vrare_vcomm.png", vrare_vcomm_comb, base_height = 14, base_width = 11, dpi = 600)
+cowplot::save_plot("outputs/appendix_D_fig_s4_vrare_vcomm.png", vrare_vcomm_comb, base_height = 14, base_width = 11, dpi = 300)
 
 #### End ####
