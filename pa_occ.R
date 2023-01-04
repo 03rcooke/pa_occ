@@ -943,13 +943,10 @@ rang_GB <- readRDS("data/rang_GB.rds")
 quant25 <- quantile(rang_GB$rang, 0.25)
 quant75 <- quantile(rang_GB$rang, 0.75)
 
-quantlow <- quant25
-quanthigh <- quant75
-
-rare_spp <- dplyr::filter(rang_GB, rang < quantlow) %>% 
+rare_spp <- dplyr::filter(rang_GB, rang < quant25) %>% 
   dplyr::mutate(grp = "rare")
 
-comm_spp <- dplyr::filter(rang_GB, rang > quanthigh) %>% 
+comm_spp <- dplyr::filter(rang_GB, rang > quant75) %>% 
   dplyr::mutate(grp = "common")
 
 rare_comm <- dplyr::bind_rows(dplyr::select(rare_spp, species, grp), dplyr::select(comm_spp, species, grp))
@@ -2120,13 +2117,13 @@ msi_pred <- trend_plot_func(grp = "Predators", msi_sum = msi_sum_comb, lim = c(0
 chng_pred <- est_plot_func(grp = "Predators", est_df = chng_comb, est_diff = chng_diff_out, vari = "change", lim = c(-0.5, 0.5), axlab = "Growth rate")
 
 # predators - beta diversity
-beta_pred <- est_plot_func(grp = "Predators", est_df = beta_tbi, est_diff = beta_diff_out, vari = "tbi_val", lim = c(-2.5, 2.5), axlab = "Temporal\nbeta diversity (%)")
+beta_pred <- est_plot_func(grp = "Predators", est_df = beta_tbi, est_diff = beta_diff_out, vari = "tbi_val", lim = c(-2.9, 2.9), axlab = "Temporal\nbeta diversity (%)")
 
 # predators - loss
-loss_pred <- est_plot_func(grp = "Predators", est_df = beta_tbi, est_diff = beta_diff_out, vari = "loss", lim = c(-3.8, 3.8), axlab = "Loss (%)")
+loss_pred <- est_plot_func(grp = "Predators", est_df = beta_tbi, est_diff = beta_diff_out, vari = "loss", lim = c(-3.7, 3.7), axlab = "Loss (%)")
 
 # predators - gain
-gain_pred <- est_plot_func(grp = "Predators", est_df = beta_tbi, est_diff = beta_diff_out, vari = "gain", lim = c(-3.1, 3.1), axlab = "Gain (%)")
+gain_pred <- est_plot_func(grp = "Predators", est_df = beta_tbi, est_diff = beta_diff_out, vari = "gain", lim = c(-3.3, 3.3), axlab = "Gain (%)")
 
 # predators - beta diversity combined
 beta_pred_plot <- cowplot::plot_grid(NULL, beta_pred[[1]], NULL, nrow = 1, rel_widths = c(0.4, 1, 0.4), labels = c("", "D", "")) %>% cowplot::plot_grid(., cowplot::plot_grid(loss_pred[[1]], gain_pred[[1]], nrow = 1, labels = c("E", "F")), nrow = 2)
@@ -2144,7 +2141,136 @@ rang_GB <- readRDS("data/rang_GB.rds")
 quant10 <- quantile(rang_GB$rang, 0.10)
 quant90 <- quantile(rang_GB$rang, 0.90)
 
-quantlow <- quant10
-quanthigh <- quant90
+vrare_spp <- dplyr::filter(rang_GB, rang < quant10) %>% 
+  dplyr::mutate(grp = "vrare")
+
+vcomm_spp <- dplyr::filter(rang_GB, rang > quant90) %>% 
+  dplyr::mutate(grp = "vcommon")
+
+vrare_vcomm <- dplyr::bind_rows(dplyr::select(vrare_spp, species, grp), dplyr::select(vcomm_spp, species, grp))
+
+occ_pa_vrc <- occ_pa %>% 
+  dplyr::select(-grp) %>% 
+  dplyr::inner_join(vrare_vcomm, by = "species") %>% 
+  dplyr::filter(!is.na(tax_grp)) %>% 
+  dplyr::filter(tax_grp != "Hoverflies2")
+
+occ_unp_vrc <- occ_unp %>% 
+  dplyr::select(-grp) %>% 
+  dplyr::right_join(vrare_vcomm, by = "species") %>% 
+  dplyr::filter(!is.na(tax_grp)) %>% 
+  dplyr::filter(tax_grp != "Hoverflies2")
+
+spr_pa_vrc <- sprich(occ_df = occ_pa_vrc)
+spr_unp_vrc <- sprich(occ_df = occ_unp_vrc)
+
+spr_comb_vrc <- dplyr::bind_rows(dplyr::select(spr_pa_vrc, grp, iteration, prot, spr), dplyr::select(spr_unp_vrc, grp, iteration, prot, spr))
+
+spr_diff_out_vrc <- sprich_diff(spr_df_pa = spr_pa_vrc, spr_df_unp = spr_unp_vrc)
+
+spr_vrare <- est_plot_func(grp = "vrare", est_df = spr_comb_vrc, est_diff = spr_diff_out_vrc, vari = "spr", lim = c(-1.5, 1.5), axlab = "Species\nrichness", yaxs = FALSE)
+
+spr_vcomm <- est_plot_func(grp = "vcommon", est_df = spr_comb_vrc, est_diff = spr_diff_out_vrc, vari = "spr", lim = c(-2.6, 2.6), axlab = " \n ")
+
+msi_pa_vrc <- msi(occ_df = occ_pa_vrc)
+msi_unp_vrc <- msi(occ_df = occ_unp_vrc)
+
+msi_sum_pa_vrc <- msi_sum(msi_df = msi_pa_vrc)
+msi_sum_unp_vrc <- msi_sum(msi_df = msi_unp_vrc)
+
+msi_sum_comb_vrc <- dplyr::bind_rows(msi_sum_pa_vrc, msi_sum_unp_vrc)
+
+msi_vrare <- trend_plot_func(grp = "vrare", msi_sum = msi_sum_comb_vrc, lim = c(0.0006, 0.0047), leg = FALSE, axlab = "Geometric\nmean occupancy")
+
+msi_vcomm <- trend_plot_func(grp = "vcommon", msi_sum = msi_sum_comb_vrc, lim = c(0.43, 0.58), leg = FALSE, axlab = " \n ")
+
+trend_pa_vrc <- trend_change(occ_df = occ_pa_vrc %>% dplyr::select(-tax_grp), taxa = unique(occ_unp_vrc$grp))
+trend_unp_vrc <- trend_change(occ_df = occ_unp_vrc %>% dplyr::select(-tax_grp), taxa = unique(occ_unp_vrc$grp))
+
+chng_pa_vrc <- tax_change(trend_df = trend_pa_vrc)
+chng_unp_vrc <- tax_change(trend_df = trend_unp_vrc)
+
+chng_comb_vrc <- dplyr::bind_rows(
+  dplyr::select(chng_pa_vrc, grp, iteration, change) %>%
+    dplyr::mutate(prot = "Protected"),
+  dplyr::select(chng_unp_vrc, grp, iteration, change) %>%
+    dplyr::mutate(prot = "Unprotected")) %>%
+  dplyr::mutate(prot = factor(prot, levels = c("Unprotected", "Protected")))
+
+chng_diff_out_vrc <- change_diff(chng_df_pa = chng_pa_vrc, chng_df_unp = chng_unp_vrc)
+
+chng_vrare <- est_plot_func(grp = "vrare", est_df = chng_comb_vrc, est_diff = chng_diff_out_vrc, vari = "change", lim = c(-4.8, 4.8), axlab = "Growth rate", xaxs = FALSE, yaxs = FALSE)
+
+chng_vcomm <- est_plot_func(grp = "vcommon", est_df = chng_comb_vrc, est_diff = chng_diff_out_vrc, vari = "change", lim = c(-0.5, 0.5), axlab = " ", xaxs = FALSE)
+
+# beta_tbi_vrc <- lapply(unique(occ_pa_vrc$grp), function(xgrp) {
+# 
+#   out <- lapply(1:999, function(x) beta_tbi_func(grp = xgrp, it = x, occ_df_pa = occ_pa_vrc, occ_df_unp = occ_unp_vrc)) %>%
+#     # bind across iterations
+#   dplyr::bind_rows()
+# 
+# }) %>%
+#   # bind across groups
+#   dplyr::bind_rows()
+# 
+# saveRDS(beta_tbi_vrc, "data/beta_tbi_rare_comm_90.rds")
+
+beta_tbi_vrc <- readRDS("data/beta_tbi_rare_comm_90.rds") %>%
+  dplyr::mutate(prot = factor(prot, levels = c("Unprotected", "Protected"))) %>%
+  # convert to percentages
+  dplyr::mutate_at(vars(tbi_val, loss, gain), ~. * 100)
+
+beta_contr_vrc <- dplyr::left_join(dplyr::filter(beta_tbi_vrc, prot == "Protected"), dplyr::filter(beta_tbi_vrc, prot == "Unprotected"), by = c("iteration", "grp"))
+
+beta_diff_out_vrc <- beta_diff(beta_df = beta_contr_vrc)
+
+# total
+
+beta_vrare <- est_plot_func(grp = "rare", est_df = beta_tbi_vrc, est_diff = beta_diff_out_vrc, vari = "tbi_val", lim = c(-39.6, 39.6), axlab = "Temporal\nbeta diversity (%)", xaxs = FALSE, yaxs = FALSE)
+
+beta_vcomm <- est_plot_func(grp = "common", est_df = beta_tbi_vrc, est_diff = beta_diff_out_vrc, vari = "tbi_val", lim = c(-6.7, 6.7), axlab = " \n ", xaxs = FALSE)
+
+# loss
+
+loss_vrare <- est_plot_func(grp = "rare", est_df = beta_tbi_vrc, est_diff = beta_diff_out_vrc, vari = "loss", lim = c(-23.9, 23.9), axlab = "Loss (%)", xaxs = FALSE, yaxs = FALSE)
+
+loss_vcomm <- est_plot_func(grp = "common", est_df = beta_tbi_vrc, est_diff = beta_diff_out_vrc, vari = "loss", lim = c(-4.8, 4.8), axlab = " ", xaxs = FALSE)
+
+# gain
+
+gain_vrare <- est_plot_func(grp = "rare", est_df = beta_tbi_vrc, est_diff = beta_diff_out_vrc, vari = "gain", lim = c(-43.3, 43.3), axlab = "Gain (%)", yaxs = FALSE)
+
+gain_vcomm <- est_plot_func(grp = "common", est_df = beta_tbi_vrc, est_diff = beta_diff_out_vrc, vari = "gain", lim = c(-2.6, 2.6), axlab = " ")
+
+nc_vrare <- beta_tbi_vrc %>% 
+  dplyr::filter(grp == "rare") %>% 
+  dplyr::mutate(nc = gain - loss) %>% 
+  dplyr::group_by(prot) %>% 
+  dplyr::summarise_at(vars(nc), list(meds = ~median(.),
+                                     low_ci = ~HDInterval::hdi(., credMass = ci)[[1]],
+                                     upp_ci = ~HDInterval::hdi(., credMass = ci)[[2]]))
+
+nc_vcommon <- beta_tbi_vrc %>% 
+  dplyr::filter(grp == "common") %>% 
+  dplyr::mutate(nc = gain - loss) %>% 
+  dplyr::group_by(prot) %>% 
+  dplyr::summarise_at(vars(nc), list(meds = ~median(.),
+                                     low_ci = ~HDInterval::hdi(., credMass = ci)[[1]],
+                                     upp_ci = ~HDInterval::hdi(., credMass = ci)[[2]]))
+
+# titles
+
+tit_vrare <- ggplot2::ggplot() +
+  ggplot2::annotate("text", x = 1, y = 1, size = 8, label = "Very rare species") + 
+  ggplot2::theme_void()
+
+tit_vcomm <- ggplot2::ggplot() +
+  ggplot2::annotate("text", x = 1, y = 1, size = 8, label = "Very common species") + 
+  ggplot2::theme_void()
+
+vrare_vcomm_comb <- cowplot::plot_grid(tit_vrare, tit_vcomm, spr_vrare[[1]], spr_vcomm[[1]], msi_vrare, msi_vcomm, chng_vrare[[1]], chng_vcomm[[1]], beta_vrare[[1]], beta_vcomm[[1]], loss_vrare[[1]], loss_vcomm[[1]], gain_vrare[[1]], gain_vcomm[[1]], ncol = 2, labels = c("", "", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"), rel_heights = c(0.2, 1, 1, 1, 1, 1, 1))
+
+# save plot
+cowplot::save_plot("outputs/appendix_D_fig_s4_vrare_vcomm.png", vrare_vcomm_comb, base_height = 14, base_width = 11, dpi = 600)
 
 #### End ####
