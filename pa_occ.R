@@ -506,12 +506,6 @@ spr_over <- est_plot_func(grp = "Overall", est_df = spr_comb, est_diff = spr_dif
 # View(spr_over[[4]])
 # View(spr_over[[6]])
 
-# pollinators
-spr_poll <- est_plot_func(grp = "Pollinators", est_df = spr_comb, est_diff = spr_diff_out, vari = "spr", lim = c(-14, 14), axlab = "Species richness")
-
-# predators
-spr_pred <- est_plot_func(grp = "Predators", est_df = spr_comb, est_diff = spr_diff_out, vari = "spr", lim = c(-31, 31), axlab = "Species richness")
-
 # save plot - fig 2
 cowplot::save_plot("outputs/fig_2_sprich_over.png", spr_over[[1]], base_height = 6, base_width = 8, dpi = 300)
 
@@ -610,12 +604,6 @@ trend_plot_func <- function(grp, msi_sum, lim = NULL, leg = FALSE, leg_coord = N
 # overall
 msi_over <- trend_plot_func(grp = "Overall", msi_sum = msi_sum_comb, lim = c(0.043, 0.082), leg = TRUE, leg_coord = c(2015, 0.076, 2015, 0.053))
 
-# pollinators
-msi_poll <- trend_plot_func(grp = "Pollinators", msi_sum = msi_sum_comb, lim = c(0.037, 0.087), axlab = "Geometric\nmean occupancy")
-
-# predators
-msi_pred <- trend_plot_func(grp = "Predators", msi_sum = msi_sum_comb, lim = c(0.044, 0.084), axlab = "Geometric\nmean occupancy")
-
 # Trend change
 
 ## Here we calculate annual growth rate between the first and last year
@@ -704,17 +692,11 @@ change_diff <- function(chng_df_pa, chng_df_unp) {
 chng_diff_out <- change_diff(chng_df_pa = chng_pa, chng_df_unp = chng_unp)
 
 # overall
-chng_over <- est_plot_func(grp = "Overall", est_df = chng_comb, est_diff = chng_diff_out, vari = "change", lim = c(-1.8, 1.8), axlab = "Growth rate")
+chng_over <- est_plot_func(grp = "Overall", est_df = chng_comb, est_diff = chng_diff_out, vari = "change", lim = c(-0.4, 0.4), axlab = "Growth rate")
 
 # View(chng_over[[2]])
 # View(chng_over[[3]])
 # View(chng_over[[4]])
-
-# pollinators
-chng_poll <- est_plot_func(grp = "Pollinators", est_df = chng_comb, est_diff = chng_diff_out, vari = "change", lim = c(-2.8, 2.8), axlab = "Growth rate")
-
-# predators
-chng_pred <- est_plot_func(grp = "Predators", est_df = chng_comb, est_diff = chng_diff_out, vari = "change", lim = c(-2.4, 2.4), axlab = "Growth rate")
 
 # combine msi and growth rate plots
 chng_comb_over <- cowplot::plot_grid(msi_over, chng_over[[1]], nrow = 2, labels = "AUTO")
@@ -839,12 +821,6 @@ nc_over <- beta_tbi %>%
                                      low_ci = ~HDInterval::hdi(., credMass = ci)[[1]],
                                      upp_ci = ~HDInterval::hdi(., credMass = ci)[[2]]))
 
-# pollinators
-beta_poll <- est_plot_func(grp = "Pollinators", est_df = beta_tbi, est_diff = beta_diff_out, vari = "tbi_val", lim = c(-3.1, 3.1), axlab = "Temporal\nbeta diversity (%)")
-
-# predators
-beta_pred <- est_plot_func(grp = "Predators", est_df = beta_tbi, est_diff = beta_diff_out, vari = "tbi_val", lim = c(-2.5, 2.5), axlab = "Temporal\nbeta diversity (%)")
-
 ## loss
 
 # overall
@@ -853,12 +829,6 @@ loss_over <- est_plot_func(grp = "Overall", est_df = beta_tbi, est_diff = beta_d
 # View(loss_over[[2]])
 # View(loss_over[[3]])
 # View(loss_over[[4]])
-
-# pollinators
-loss_poll <- est_plot_func(grp = "Pollinators", est_df = beta_tbi, est_diff = beta_diff_out, vari = "loss", lim = c(-2.3, 2.3), axlab = "Loss (%)")
-
-# predators
-loss_pred <- est_plot_func(grp = "Predators", est_df = beta_tbi, est_diff = beta_diff_out, vari = "loss", lim = c(-3.8, 3.8), axlab = "Loss (%)")
 
 ## gain
 
@@ -869,12 +839,6 @@ gain_over <- est_plot_func(grp = "Overall", est_df = beta_tbi, est_diff = beta_d
 # View(gain_over[[3]])
 # View(gain_over[[4]])
 
-# pollinators
-gain_poll <- est_plot_func(grp = "Pollinators", est_df = beta_tbi, est_diff = beta_diff_out, vari = "gain", lim = c(-3.1, 3.1), axlab = "Gain (%)")
-
-# predators
-gain_pred <- est_plot_func(grp = "Predators", est_df = beta_tbi, est_diff = beta_diff_out, vari = "gain", lim = c(-3.1, 3.1), axlab = "Gain (%)")
-
 # beta diversity plot for overall
 beta_over_plot <- cowplot::plot_grid(NULL, beta_over[[1]], NULL, nrow = 1, rel_widths = c(0.4, 1, 0.4), labels = c("", "A", "")) %>% cowplot::plot_grid(., cowplot::plot_grid(loss_over[[1]], gain_over[[1]], nrow = 1, labels = c("B", "C")), nrow = 2)
 
@@ -883,8 +847,16 @@ cowplot::save_plot("outputs/fig_4_beta_over.png", beta_over_plot, base_height = 
 
 ##### Fig 5 - Pollinators combined plots #####
 
-# net change
-# pollinators
+# pollinators - species richness
+spr_poll <- est_plot_func(grp = "Pollinators", est_df = spr_comb, est_diff = spr_diff_out, vari = "spr", lim = c(-14, 14), axlab = "Species richness")
+
+# pollinators - msi
+msi_poll <- trend_plot_func(grp = "Pollinators", msi_sum = msi_sum_comb, lim = c(0.037, 0.087), axlab = "Geometric\nmean occupancy")
+
+# pollinators - change
+chng_poll <- est_plot_func(grp = "Pollinators", est_df = chng_comb, est_diff = chng_diff_out, vari = "change", lim = c(-0.6, 0.6), axlab = "Growth rate")
+
+# pollinators - net change
 nc_poll <- beta_tbi %>% 
   dplyr::filter(grp == "Pollinators") %>% 
   dplyr::mutate(nc = gain - loss) %>% 
@@ -893,7 +865,16 @@ nc_poll <- beta_tbi %>%
                                      low_ci = ~HDInterval::hdi(., credMass = ci)[[1]],
                                      upp_ci = ~HDInterval::hdi(., credMass = ci)[[2]]))
 
-# beta diversity
+# pollinators - beta diversity
+beta_poll <- est_plot_func(grp = "Pollinators", est_df = beta_tbi, est_diff = beta_diff_out, vari = "tbi_val", lim = c(-3.1, 3.1), axlab = "Temporal\nbeta diversity (%)")
+
+# pollinators - loss
+loss_poll <- est_plot_func(grp = "Pollinators", est_df = beta_tbi, est_diff = beta_diff_out, vari = "loss", lim = c(-2.3, 2.3), axlab = "Loss (%)")
+
+# pollinators - gain
+gain_poll <- est_plot_func(grp = "Pollinators", est_df = beta_tbi, est_diff = beta_diff_out, vari = "gain", lim = c(-3.1, 3.1), axlab = "Gain (%)")
+
+# pollinators - beta diversity combined
 beta_poll_plot <- cowplot::plot_grid(NULL, beta_poll[[1]], NULL, nrow = 1, rel_widths = c(0.4, 1, 0.4), labels = c("", "D", "")) %>% cowplot::plot_grid(., cowplot::plot_grid(loss_poll[[1]], gain_poll[[1]], nrow = 1, labels = c("E", "F")), nrow = 2)
 
 # species richness, trends, beta diversity
@@ -1858,7 +1839,25 @@ cowplot::save_plot("outputs/appendix_C_fig_s1_conv.png", conv_plot, base_height 
 
 ##### Appendix C Fig S3 - Predators combined plots #####
 
-# beta diversity
+# predators - species richness
+spr_pred <- est_plot_func(grp = "Predators", est_df = spr_comb, est_diff = spr_diff_out, vari = "spr", lim = c(-31, 31), axlab = "Species richness")
+
+# predators - msi
+msi_pred <- trend_plot_func(grp = "Predators", msi_sum = msi_sum_comb, lim = c(0.044, 0.084), axlab = "Geometric\nmean occupancy")
+
+# predators - change
+chng_pred <- est_plot_func(grp = "Predators", est_df = chng_comb, est_diff = chng_diff_out, vari = "change", lim = c(-0.5, 0.5), axlab = "Growth rate")
+
+# predators - beta diversity
+beta_pred <- est_plot_func(grp = "Predators", est_df = beta_tbi, est_diff = beta_diff_out, vari = "tbi_val", lim = c(-2.5, 2.5), axlab = "Temporal\nbeta diversity (%)")
+
+# predators - loss
+loss_pred <- est_plot_func(grp = "Predators", est_df = beta_tbi, est_diff = beta_diff_out, vari = "loss", lim = c(-3.8, 3.8), axlab = "Loss (%)")
+
+# predators - gain
+gain_pred <- est_plot_func(grp = "Predators", est_df = beta_tbi, est_diff = beta_diff_out, vari = "gain", lim = c(-3.1, 3.1), axlab = "Gain (%)")
+
+# predators - beta diversity combined
 beta_pred_plot <- cowplot::plot_grid(NULL, beta_pred[[1]], NULL, nrow = 1, rel_widths = c(0.4, 1, 0.4), labels = c("", "D", "")) %>% cowplot::plot_grid(., cowplot::plot_grid(loss_pred[[1]], gain_pred[[1]], nrow = 1, labels = c("E", "F")), nrow = 2)
 
 # species richness, trends, beta diversity

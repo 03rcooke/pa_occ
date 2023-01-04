@@ -1,8 +1,6 @@
 # pa_occ
 
-This repository contains the R code and files underpinning 'Protected areas support more species than unprotected areas in Great Britain, but lose them equally rapidly'
-Rob Cooke, Francesca Mancini, Robin J. Boyd, Karl L. Evans, Anna Shaw, Thomas J. Webb, Nick J. B. Isaac
-Biological Conservation (2023)
+This repository contains the R code and files underpinning Rob Cooke, Francesca Mancini, Robin J. Boyd, Karl L. Evans, Anna Shaw, Thomas J. Webb, Nick J. B. Isaac, 2023. Protected areas support more species than unprotected areas in Great Britain, but lose them equally rapidly. Biological Conservation.
 
 pa_occ.R contains the script to summarise the occupancy model outputs and produce the figures, including:
 
