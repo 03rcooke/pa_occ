@@ -276,6 +276,8 @@ ntax <- length(taxa)
 occ_pa_prep <- readRDS("data/occ_pa_prep.rds")
 occ_unp_prep <- readRDS("data/occ_unp_prep.rds")
 
+# occ_GB too large for GitHub - ask the author for a copy
+
 ##### Assign functional groups #####
 
 # duplicate hoverflies as there are primary contributors to two ecosystem functions
@@ -312,6 +314,45 @@ GB_func_spp <- occ_pa %>%
 rm(hov_pa, hov_unp, occ_pa_func, occ_pa_prep, occ_unp_func, occ_unp_prep)
 
 #### Main analyses ####
+
+##### Number of records #####
+
+# meta_pa <- lapply(taxa, function(x) {
+# 
+#   load_rdata(paste0("data/filtered/", x, "_all_pa_samp.rdata")) %>%
+#     .[[2]] %>%
+#     dplyr::mutate(tax_grp = x)
+# 
+# }) %>%
+#   dplyr::bind_rows(.) %>%
+#   dplyr::filter(Species_r_pa %in% occ_pa$species)
+# 
+# rec_pa <- meta_pa %>% 
+#   dplyr::group_by(tax_grp) %>% 
+#   dplyr::summarise(recs = sum(n_obs_regional_r_pa))
+# 
+# meta_unp <- lapply(taxa, function(x) {
+# 
+#   load_rdata(paste0("data/filtered/", x, "_all_unp_samp.rdata")) %>%
+#     .[[2]] %>%
+#     dplyr::mutate(tax_grp = x)
+# 
+# }) %>%
+#   dplyr::bind_rows(.) %>%
+#   dplyr::filter(Species_r_unp %in% occ_unp$species)
+# 
+# rec_unp <- meta_unp %>%
+#   dplyr::group_by(tax_grp) %>%
+#   dplyr::summarise(recs = sum(n_obs_regional_r_unp))
+# 
+# rec_all <- dplyr::bind_cols(rec_pa, rec_unp) %>% 
+#   dplyr::mutate(rec_all = recs + recs1)
+# 
+# saveRDS(rec_all, "data/rec_all.rds")
+
+rec_all <- readRDS("data/rec_all.rds")
+
+sum(rec_all$rec_all)
 
 ##### Fig 1 - GB plot #####
 
@@ -408,7 +449,7 @@ sprich_diff <- function(spr_df_pa, spr_df_unp) {
 # calculate difference between protected and unprotected areas
 spr_diff_out <- sprich_diff(spr_df_pa = spr_pa, spr_df_unp = spr_unp)
 
-est_plot_func <- function(grp, est_df, est_diff, vari, lim = NULL, axlab) {
+est_plot_func <- function(grp, est_df, est_diff, vari, lim = NULL, axlab, xaxs = TRUE, yaxs = TRUE) {
   
   perc_diff_df <- NULL
   
@@ -458,34 +499,39 @@ est_plot_func <- function(grp, est_df, est_diff, vari, lim = NULL, axlab) {
     dplyr::mutate(diff = c(0, diff_av[ , paste0(vari_diff, "_median")][[1]])) %>% 
     dplyr::mutate(colr = c("#EE7733", "#0077BB"))
   
-  est_plot <- ggplot2::ggplot(df, ggplot2::aes(x = prot, y = .data[[vari]])) +
+  est_plot <- ggplot(df, aes(x = prot, y = .data[[vari]])) +
     # median lines
-    ggplot2::geom_hline(data = meds, ggplot2::aes(yintercept = meds, colour = prot), lty = 2, lwd = 1) +
+    geom_hline(data = meds, aes(yintercept = meds, colour = prot), lty = 2, lwd = 1) +
     # jittered points
-    ggplot2::geom_jitter(ggplot2::aes(colour = prot), alpha = 0.4)  +
+    geom_jitter(aes(colour = prot), alpha = 0.4)  +
     # scales
-    ggplot2::scale_y_continuous(name = axlab, limits = c(low_lim + meds[1,2][[1]], upp_lim + meds[1,2][[1]])) +
-    ggplot2::scale_x_discrete(labels = c("Unprotected\n ", "Protected\n ")) +
-    ggplot2::scale_colour_manual(values = c("#EE7733", "#0077BB")) +
-    ggplot2::theme(legend.position = "none",
-                   axis.title.x = ggplot2::element_blank())
+    scale_y_continuous(name = axlab, limits = c(low_lim + meds[1,2][[1]], upp_lim + meds[1,2][[1]])) +
+    {if(xaxs == TRUE) scale_x_discrete(labels = c("Unprotected\n ", "Protected\n "))} +
+    {if(xaxs == FALSE) scale_x_discrete(labels = c(" \n ", " \n "))} +
+    scale_colour_manual(values = c("#EE7733", "#0077BB")) +
+    {if(xaxs == FALSE) theme(axis.ticks.x = element_blank())} +
+    theme(legend.position = "none",
+          axis.title.x = element_blank())
   
-  est_diff_plot <- ggplot2::ggplot(diff_df, ggplot2::aes(x = "", y = .data[[vari_diff]])) +
+  est_diff_plot <- ggplot(diff_df, aes(x = "", y = .data[[vari_diff]])) +
     # median lines
-    ggplot2::geom_hline(data = meds, ggplot2::aes(yintercept = diff), colour = meds$colr, lty = 2, lwd = 1) +
+    geom_hline(data = meds, aes(yintercept = diff), colour = meds$colr, lty = 2, lwd = 1) +
     # half violin
     gghalves::geom_half_violin(fill = "grey50", side = "r", colour = NA, scale = "count", alpha = 0.6) +
     # 95% CrI
-    ggplot2::geom_linerange(data = diff_av, ggplot2::aes(ymax = .data[[paste0(vari_diff, "_upp_ci")]], ymin = .data[[paste0(vari_diff, "_low_ci")]], x = ""), colour = "grey50", size = 1, inherit.aes = FALSE) +
+    geom_linerange(data = diff_av, aes(ymax = .data[[paste0(vari_diff, "_upp_ci")]], ymin = .data[[paste0(vari_diff, "_low_ci")]], x = ""), colour = "grey50", size = 1, inherit.aes = FALSE) +
     # median
-    ggplot2::geom_point(data = diff_av, ggplot2::aes(y = .data[[paste0(vari_diff, "_median")]]), colour = "grey50", size = 10, shape = "-") +
+    geom_point(data = diff_av, aes(y = .data[[paste0(vari_diff, "_median")]]), colour = "grey50", size = 10, shape = "-") +
     # relative effect size
-    ggplot2::annotate("text", x = 1, y = min(diff_df[vari_diff]), label = eff_text) +
+    annotate("text", x = 1, y = min(diff_df[vari_diff]), label = eff_text) +
     # scales
-    ggplot2::scale_y_continuous(name = "Difference", position = "right", limits = c(low_lim, upp_lim)) +
-    ggplot2::scale_x_discrete(labels = c("Protected minus\nunprotected")) +
-    ggplot2::theme(legend.position = "none",
-                   axis.title.x = ggplot2::element_blank())
+    {if(yaxs == TRUE) scale_y_continuous(name = "Difference", position = "right", limits = c(low_lim, upp_lim))} +
+    {if(yaxs == FALSE) scale_y_continuous(name = " ", position = "right", limits = c(low_lim, upp_lim))} +
+    {if(xaxs == TRUE) scale_x_discrete(labels = c("Protected minus\nunprotected"))} +
+    {if(xaxs == FALSE) scale_x_discrete(labels = c(" \n "))} +
+    {if(xaxs == FALSE) theme(axis.ticks.x = element_blank())} +
+    theme(legend.position = "none",
+          axis.title.x = element_blank())
   
   est_prep_plot <- cowplot::plot_grid(est_plot, est_diff_plot, rel_widths = c(1, 0.8))
   
@@ -824,7 +870,7 @@ nc_over <- beta_tbi %>%
 ## loss
 
 # overall
-loss_over <- est_plot_func(grp = "Overall", est_df = beta_tbi, est_diff = beta_diff_out, vari = "loss", lim = c(-2.7, 2.7), axlab = "Loss (%)")
+loss_over <- est_plot_func(grp = "Overall", est_df = beta_tbi, est_diff = beta_diff_out, vari = "loss", lim = c(-3.2, 3.2), axlab = "Loss (%)")
 
 # View(loss_over[[2]])
 # View(loss_over[[3]])
@@ -833,7 +879,7 @@ loss_over <- est_plot_func(grp = "Overall", est_df = beta_tbi, est_diff = beta_d
 ## gain
 
 # overall
-gain_over <- est_plot_func(grp = "Overall", est_df = beta_tbi, est_diff = beta_diff_out, vari = "gain", lim = c(-2.4, 2.4), axlab = "Gain (%)")
+gain_over <- est_plot_func(grp = "Overall", est_df = beta_tbi, est_diff = beta_diff_out, vari = "gain", lim = c(-2.6, 2.6), axlab = "Gain (%)")
 
 # View(gain_over[[2]])
 # View(gain_over[[3]])
@@ -866,13 +912,13 @@ nc_poll <- beta_tbi %>%
                                      upp_ci = ~HDInterval::hdi(., credMass = ci)[[2]]))
 
 # pollinators - beta diversity
-beta_poll <- est_plot_func(grp = "Pollinators", est_df = beta_tbi, est_diff = beta_diff_out, vari = "tbi_val", lim = c(-3.1, 3.1), axlab = "Temporal\nbeta diversity (%)")
+beta_poll <- est_plot_func(grp = "Pollinators", est_df = beta_tbi, est_diff = beta_diff_out, vari = "tbi_val", lim = c(-3.9, 3.9), axlab = "Temporal\nbeta diversity (%)")
 
 # pollinators - loss
-loss_poll <- est_plot_func(grp = "Pollinators", est_df = beta_tbi, est_diff = beta_diff_out, vari = "loss", lim = c(-2.3, 2.3), axlab = "Loss (%)")
+loss_poll <- est_plot_func(grp = "Pollinators", est_df = beta_tbi, est_diff = beta_diff_out, vari = "loss", lim = c(-2.1, 2.1), axlab = "Loss (%)")
 
 # pollinators - gain
-gain_poll <- est_plot_func(grp = "Pollinators", est_df = beta_tbi, est_diff = beta_diff_out, vari = "gain", lim = c(-3.1, 3.1), axlab = "Gain (%)")
+gain_poll <- est_plot_func(grp = "Pollinators", est_df = beta_tbi, est_diff = beta_diff_out, vari = "gain", lim = c(-3.7, 3.7), axlab = "Gain (%)")
 
 # pollinators - beta diversity combined
 beta_poll_plot <- cowplot::plot_grid(NULL, beta_poll[[1]], NULL, nrow = 1, rel_widths = c(0.4, 1, 0.4), labels = c("", "D", "")) %>% cowplot::plot_grid(., cowplot::plot_grid(loss_poll[[1]], gain_poll[[1]], nrow = 1, labels = c("E", "F")), nrow = 2)
@@ -885,20 +931,20 @@ cowplot::save_plot("outputs/fig_5_poll.png", poll_plot, base_height = 12, base_w
 
 ##### Fig 6 - Rare vs common ####
 
-rang_GB <- occ_GB %>% 
-  tidyr::gather(year, occ, dplyr::starts_with("year_")) %>%
-  dplyr::group_by(species) %>% 
-  # median occupancy across years per species
-  dplyr::summarise(rang = median(occ, na.rm = TRUE))
+# # occ_GB too large for GitHub - ask the author for a copy
+# rang_GB <- occ_GB %>% 
+#   tidyr::gather(year, occ, dplyr::starts_with("year_")) %>%
+#   dplyr::group_by(species) %>% 
+#   # median occupancy across years per species
+#   dplyr::summarise(rang = median(occ, na.rm = TRUE))
+
+rang_GB <- readRDS("data/rang_GB.rds")
 
 quant25 <- quantile(rang_GB$rang, 0.25)
 quant75 <- quantile(rang_GB$rang, 0.75)
 
-quant10 <- quantile(rang_GB$rang, 0.10)
-quant90 <- quantile(rang_GB$rang, 0.90)
-
-quantlow <- quant10
-quanthigh <- quant90
+quantlow <- quant25
+quanthigh <- quant75
 
 rare_spp <- dplyr::filter(rang_GB, rang < quantlow) %>% 
   dplyr::mutate(grp = "rare")
@@ -908,69 +954,63 @@ comm_spp <- dplyr::filter(rang_GB, rang > quanthigh) %>%
 
 rare_comm <- dplyr::bind_rows(dplyr::select(rare_spp, species, grp), dplyr::select(comm_spp, species, grp))
 
-occ_pa <- occ_pa %>% 
+occ_pa_rc <- occ_pa %>% 
   dplyr::select(-grp) %>% 
   dplyr::inner_join(rare_comm, by = "species") %>% 
   dplyr::filter(!is.na(tax_grp)) %>% 
   dplyr::filter(tax_grp != "Hoverflies2")
 
-occ_unp <- occ_unp %>% 
+occ_unp_rc <- occ_unp %>% 
   dplyr::select(-grp) %>% 
   dplyr::right_join(rare_comm, by = "species") %>% 
   dplyr::filter(!is.na(tax_grp)) %>% 
   dplyr::filter(tax_grp != "Hoverflies2")
 
-spr_pa <- sprich(occ_df = occ_pa)
-spr_unp <- sprich(occ_df = occ_unp)
+spr_pa_rc <- sprich(occ_df = occ_pa_rc)
+spr_unp_rc <- sprich(occ_df = occ_unp_rc)
 
-spr_comb <- dplyr::bind_rows(dplyr::select(spr_pa, grp, iteration, prot, spr), dplyr::select(spr_unp, grp, iteration, prot, spr))
+spr_comb_rc <- dplyr::bind_rows(dplyr::select(spr_pa_rc, grp, iteration, prot, spr), dplyr::select(spr_unp_rc, grp, iteration, prot, spr))
 
-spr_diff_out <- sprich_diff(spr_df_pa = spr_pa, spr_df_unp = spr_unp)
+spr_diff_out_rc <- sprich_diff(spr_df_pa = spr_pa_rc, spr_df_unp = spr_unp_rc)
 
-spr_rare <- est_plot_func(grp = "rare", est_df = spr_comb, est_diff = spr_diff_out, vari = "spr", lim = c(-1.5, 1.5), axlab = "Species\nrichness", yaxs = FALSE)
-# 5.7
+spr_rare <- est_plot_func(grp = "rare", est_df = spr_comb_rc, est_diff = spr_diff_out_rc, vari = "spr", lim = c(-5.7, 5.7), axlab = "Species\nrichness", yaxs = FALSE)
 
-spr_comm <- est_plot_func(grp = "common", est_df = spr_comb, est_diff = spr_diff_out, vari = "spr", lim = c(-2.6, 2.6), axlab = " \n ")
-# 9.8
+spr_comm <- est_plot_func(grp = "common", est_df = spr_comb_rc, est_diff = spr_diff_out_rc, vari = "spr", lim = c(-9.8, 9.8), axlab = " \n ")
 
-msi_pa <- msi(occ_df = occ_pa)
-msi_unp <- msi(occ_df = occ_unp)
+msi_pa_rc <- msi(occ_df = occ_pa_rc)
+msi_unp_rc <- msi(occ_df = occ_unp_rc)
 
-msi_sum_pa <- msi_sum(msi_df = msi_pa)
-msi_sum_unp <- msi_sum(msi_df = msi_unp)
+msi_sum_pa_rc <- msi_sum(msi_df = msi_pa_rc)
+msi_sum_unp_rc <- msi_sum(msi_df = msi_unp_rc)
 
-msi_sum_comb <- dplyr::bind_rows(msi_sum_pa, msi_sum_unp)
+msi_sum_comb_rc <- dplyr::bind_rows(msi_sum_pa_rc, msi_sum_unp_rc)
 
-msi_rare <- trend_plot_func(grp = "rare", msi_sum = msi_sum_comb, lim = c(0.0006, 0.0047), leg = FALSE, axlab = "Geometric\nmean occupancy")
-# 0.0029, 0.011
+msi_rare <- trend_plot_func(grp = "rare", msi_sum = msi_sum_comb_rc, lim = c(0.0029, 0.011), leg = FALSE, axlab = "Geometric\nmean occupancy")
 
-msi_comm <- trend_plot_func(grp = "common", msi_sum = msi_sum_comb, lim = c(0.43, 0.58), leg = FALSE, axlab = " \n ")
-# 0.30, 0.43
+msi_comm <- trend_plot_func(grp = "common", msi_sum = msi_sum_comb_rc, lim = c(0.30, 0.43), leg = FALSE, axlab = " \n ")
 
-trend_pa <- trend_change(occ_df = occ_pa %>% dplyr::select(-tax_grp), taxa = unique(occ_unp$grp))
-trend_unp <- trend_change(occ_df = occ_unp %>% dplyr::select(-tax_grp), taxa = unique(occ_unp$grp))
+trend_pa_rc <- trend_change(occ_df = occ_pa_rc %>% dplyr::select(-tax_grp), taxa = unique(occ_unp_rc$grp))
+trend_unp_rc <- trend_change(occ_df = occ_unp_rc %>% dplyr::select(-tax_grp), taxa = unique(occ_unp_rc$grp))
 
-chng_pa <- tax_change(trend_df = trend_pa)
-chng_unp <- tax_change(trend_df = trend_unp)
+chng_pa_rc <- tax_change(trend_df = trend_pa_rc)
+chng_unp_rc <- tax_change(trend_df = trend_unp_rc)
 
-chng_comb <- dplyr::bind_rows(
-  dplyr::select(chng_pa, grp, iteration, change) %>%
+chng_comb_rc <- dplyr::bind_rows(
+  dplyr::select(chng_pa_rc, grp, iteration, change) %>%
     dplyr::mutate(prot = "Protected"),
-  dplyr::select(chng_unp, grp, iteration, change) %>%
+  dplyr::select(chng_unp_rc, grp, iteration, change) %>%
     dplyr::mutate(prot = "Unprotected")) %>%
   dplyr::mutate(prot = factor(prot, levels = c("Unprotected", "Protected")))
 
-chng_diff_out <- change_diff(chng_df_pa = chng_pa, chng_df_unp = chng_unp)
+chng_diff_out_rc <- change_diff(chng_df_pa = chng_pa_rc, chng_df_unp = chng_unp_rc)
 
-chng_rare <- est_plot_func(grp = "rare", est_df = chng_comb, est_diff = chng_diff_out, vari = "change", lim = c(-4.8, 4.8), axlab = "Growth rate", xaxs = FALSE, yaxs = FALSE)
-# -1.5, 1.5
+chng_rare <- est_plot_func(grp = "rare", est_df = chng_comb_rc, est_diff = chng_diff_out_rc, vari = "change", lim = c(-1.5, 1.5), axlab = "Growth rate", xaxs = FALSE, yaxs = FALSE)
 
-chng_comm <- est_plot_func(grp = "common", est_df = chng_comb, est_diff = chng_diff_out, vari = "change", lim = c(-0.5, 0.5), axlab = " ", xaxs = FALSE)
-# -0.6, 0.6
+chng_comm <- est_plot_func(grp = "common", est_df = chng_comb_rc, est_diff = chng_diff_out_rc, vari = "change", lim = c(-0.6, 0.6), axlab = " ", xaxs = FALSE)
 
-# beta_tbi <- lapply(unique(occ_pa$grp), function(xgrp) {
+# beta_tbi_rc <- lapply(unique(occ_pa_rc$grp), function(xgrp) {
 # 
-#   out <- lapply(1:999, function(x) beta_tbi_func(grp = xgrp, it = x, occ_df_pa = occ_pa, occ_df_unp = occ_unp)) %>%
+#   out <- lapply(1:999, function(x) beta_tbi_func(grp = xgrp, it = x, occ_df_pa = occ_pa_rc, occ_df_unp = occ_unp_rc)) %>%
 #     # bind across iterations
 #   dplyr::bind_rows()
 # 
@@ -978,120 +1018,77 @@ chng_comm <- est_plot_func(grp = "common", est_df = chng_comb, est_diff = chng_d
 #   # bind across groups
 #   dplyr::bind_rows()
 # 
-# saveRDS(beta_tbi, "data/beta_tbi_rare_comm_90.rds")
+# saveRDS(beta_tbi_rc, "data/beta_tbi_rare_comm.rds")
 
-beta_tbi <- readRDS("data/beta_tbi_rare_comm.rds") %>%
+beta_tbi_rc <- readRDS("data/beta_tbi_rare_comm.rds") %>%
   dplyr::mutate(prot = factor(prot, levels = c("Unprotected", "Protected"))) %>%
   # convert to percentages
   dplyr::mutate_at(vars(tbi_val, loss, gain), ~. * 100)
 
-beta_contr <- dplyr::left_join(dplyr::filter(beta_tbi, prot == "Protected"), dplyr::filter(beta_tbi, prot == "Unprotected"), by = c("iteration", "grp"))
+beta_contr_rc <- dplyr::left_join(dplyr::filter(beta_tbi_rc, prot == "Protected"), dplyr::filter(beta_tbi_rc, prot == "Unprotected"), by = c("iteration", "grp"))
 
-beta_diff_out <- beta_diff(beta_df = beta_contr)
+beta_diff_out_rc <- beta_diff(beta_df = beta_contr_rc)
 
 # total
 
-beta_rare <- est_plot_func(grp = "rare", est_df = beta_tbi, est_diff = beta_diff_out, vari = "tbi_val", lim = c(-39.6, 39.6), axlab = "Temporal\nbeta diversity (%)", xaxs = FALSE, yaxs = FALSE)
-# -20.8, 20.8
+beta_rare <- est_plot_func(grp = "rare", est_df = beta_tbi_rc, est_diff = beta_diff_out_rc, vari = "tbi_val", lim = c(-20.8, 20.8), axlab = "Temporal\nbeta diversity (%)", xaxs = FALSE, yaxs = FALSE)
 
-beta_comm <- est_plot_func(grp = "common", est_df = beta_tbi, est_diff = beta_diff_out, vari = "tbi_val", lim = c(-6.7, 6.7), axlab = " \n ", xaxs = FALSE)
-# -4.3, 4.3
+beta_comm <- est_plot_func(grp = "common", est_df = beta_tbi_rc, est_diff = beta_diff_out_rc, vari = "tbi_val", lim = c(-4.3, 4.3), axlab = " \n ", xaxs = FALSE)
 
 # loss
 
-loss_rare <- est_plot_func(grp = "rare", est_df = beta_tbi, est_diff = beta_diff_out, vari = "loss", lim = c(-23.9, 23.9), axlab = "Loss (%)", xaxs = FALSE, yaxs = FALSE)
-# -13.0, 13.0
+loss_rare <- est_plot_func(grp = "rare", est_df = beta_tbi_rc, est_diff = beta_diff_out_rc, vari = "loss", lim = c(-13.0, 13.0), axlab = "Loss (%)", xaxs = FALSE, yaxs = FALSE)
 
-loss_comm <- est_plot_func(grp = "common", est_df = beta_tbi, est_diff = beta_diff_out, vari = "loss", lim = c(-4.8, 4.8), axlab = " ", xaxs = FALSE)
-# -4.2, 4.2
+loss_comm <- est_plot_func(grp = "common", est_df = beta_tbi_rc, est_diff = beta_diff_out_rc, vari = "loss", lim = c(-4.2, 4.2), axlab = " ", xaxs = FALSE)
 
 # gain
 
-gain_rare <- est_plot_func(grp = "rare", est_df = beta_tbi, est_diff = beta_diff_out, vari = "gain", lim = c(-43.3, 43.3), axlab = "Gain (%)", yaxs = FALSE)
-# -24.1, 24.1
+gain_rare <- est_plot_func(grp = "rare", est_df = beta_tbi_rc, est_diff = beta_diff_out_rc, vari = "gain", lim = c(-24.1, 24.1), axlab = "Gain (%)", yaxs = FALSE)
 
-gain_comm <- est_plot_func(grp = "common", est_df = beta_tbi, est_diff = beta_diff_out, vari = "gain", lim = c(-2.6, 2.6), axlab = " ")
-# -2.2, 2.2
+gain_comm <- est_plot_func(grp = "common", est_df = beta_tbi_rc, est_diff = beta_diff_out_rc, vari = "gain", lim = c(-2.2, 2.2), axlab = " ")
 
-nc_rare <- beta_tbi %>% 
+nc_rare <- beta_tbi_rc %>% 
   dplyr::filter(grp == "rare") %>% 
   dplyr::mutate(nc = gain - loss) %>% 
   dplyr::group_by(prot) %>% 
-  dplyr::summarise_at(vars(nc), list(meds = ~median,
+  dplyr::summarise_at(vars(nc), list(meds = ~median(.),
                                      low_ci = ~HDInterval::hdi(., credMass = ci)[[1]],
                                      upp_ci = ~HDInterval::hdi(., credMass = ci)[[2]]))
 
-nc_common <- beta_tbi %>% 
+nc_common <- beta_tbi_rc %>% 
   dplyr::filter(grp == "common") %>% 
   dplyr::mutate(nc = gain - loss) %>% 
   dplyr::group_by(prot) %>% 
-  dplyr::summarise_at(vars(nc), list(meds = ~median,
+  dplyr::summarise_at(vars(nc), list(meds = ~median(.),
                                      low_ci = ~HDInterval::hdi(., credMass = ci)[[1]],
                                      upp_ci = ~HDInterval::hdi(., credMass = ci)[[2]]))
 
-tit_rare <- ggplot() +
-  annotate("text", x = 1, y = 1, size = 8,
-           label = "Very rare species") + 
-  theme_void()
+# titles
 
-tit_comm <- ggplot() +
-  annotate("text", x = 1, y = 1, size = 8,
-           label = "Very common species") + 
-  theme_void()
+tit_rare <- ggplot2::ggplot() +
+  ggplot2::annotate("text", x = 1, y = 1, size = 8, label = "Rare species") + 
+  ggplot2::theme_void()
 
+tit_comm <- ggplot2::ggplot() +
+  ggplot2::annotate("text", x = 1, y = 1, size = 8, label = "Common species") + 
+  ggplot2::theme_void()
+
+# combined plot
 rare_comm_comb <- cowplot::plot_grid(tit_rare, tit_comm, spr_rare[[1]], spr_comm[[1]], msi_rare, msi_comm, chng_rare[[1]], chng_comm[[1]], beta_rare[[1]], beta_comm[[1]], loss_rare[[1]], loss_comm[[1]], gain_rare[[1]], gain_comm[[1]], ncol = 2, labels = c("", "", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"), rel_heights = c(0.2, 1, 1, 1, 1, 1, 1))
 
-# # save plots
-# cowplot::save_plot("outputs/rare_comm_comb_90.png", rare_comm_comb, base_height = 14, base_width = 11, dpi = 600)
-
-##### Number of records #####
-
-# meta_pa <- lapply(taxa, function(x) {
-# 
-#   load_rdata(paste0("data/filtered/", x, "_all_pa_samp.rdata")) %>%
-#     .[[2]] %>%
-#     dplyr::mutate(tax_grp = x)
-# 
-# }) %>%
-#   dplyr::bind_rows(.) %>%
-#   dplyr::filter(Species_r_pa %in% occ_pa$species)
-# 
-# rec_pa <- meta_pa %>% 
-#   dplyr::group_by(tax_grp) %>% 
-#   dplyr::summarise(recs = sum(n_obs_regional_r_pa))
-# 
-# meta_unp <- lapply(taxa, function(x) {
-# 
-#   load_rdata(paste0("data/filtered/", x, "_all_unp_samp.rdata")) %>%
-#     .[[2]] %>%
-#     dplyr::mutate(tax_grp = x)
-# 
-# }) %>%
-#   dplyr::bind_rows(.) %>%
-#   dplyr::filter(Species_r_unp %in% occ_unp$species)
-# 
-# rec_unp <- meta_unp %>%
-#   dplyr::group_by(tax_grp) %>%
-#   dplyr::summarise(recs = sum(n_obs_regional_r_unp))
-# 
-# rec_all <- dplyr::bind_cols(rec_pa, rec_unp) %>% 
-#   dplyr::mutate(rec_all = recs + recs1)
-# 
-# saveRDS(rec_all, "data/rec_all.rds")
-
-rec_all <- readRDS("data/rec_all.rds")
-
-sum(rec_all$rec_all)
-
+# save plots
+cowplot::save_plot("outputs/fig_6_rare_comm.png", rare_comm_comb, base_height = 14, base_width = 11, dpi = 600)
 
 #### Appendix A - Histograms of protected area coverage ####
 
-pa_pr_hist <- dplyr::left_join(pro_stat, dplyr::mutate(pa_pr_1990_orig, pa_prop_1990 = pa_prop * 100), by = c("grid_ref", "region", "easting", "northing")) %>% 
-  dplyr::left_join(dplyr::mutate(pa_pr_2018_orig, pa_prop_2018 = pa_prop * 100), by = c("grid_ref", "region", "easting", "northing")) %>% 
-  # only protected cells
-  dplyr::filter(prot == "pa") %>% 
-  # change in protected area coverage within focal period
-  dplyr::mutate(chng = pa_prop_2018 - pa_prop_1990)
+# pa_pr_hist <- dplyr::left_join(pro_stat, dplyr::mutate(pa_pr_1990, pa_prop_1990 = pa_prop * 100), by = c("grid_ref", "region", "easting", "northing")) %>% 
+#   dplyr::left_join(dplyr::mutate(pa_pr_2018, pa_prop_2018 = pa_prop * 100), by = c("grid_ref", "region", "easting", "northing")) %>% 
+#   # only protected cells
+#   dplyr::filter(prot == "pa") %>% 
+#   # change in protected area coverage within focal period
+#   dplyr::mutate(chng = pa_prop_2018 - pa_prop_1990)
+
+pa_pr_hist <- readRDS("data/pa_pr_hist.rds")
 
 gap <- 5
 
@@ -1103,7 +1100,8 @@ pa_1990_hist <- ggplot2::ggplot(data = pa_pr_hist, ggplot2::aes(pa_prop_1990)) +
   ggplot2::labs(x = "Protected area\ncoverage 1990 (%)", y = "Number of\nprotected grid cells") +
   ggplot2::lims(y = c(0, 7600))
 
-# find maximum max(ggplot_build(pa_2018_hist)$data[[1]]$count)
+# # find maximum for limits
+# max(ggplot2::ggplot_build(pa_2018_hist)$data[[1]]$count)
 
 # plot protected area coverage 1990 histogram
 pa_2018_hist <- ggplot2::ggplot(data = pa_pr_hist, ggplot2::aes(pa_prop_2018)) +
@@ -1122,7 +1120,7 @@ pa_chng_hist <- ggplot2::ggplot(data = pa_pr_hist, ggplot2::aes(chng)) +
 pa_hist <- cowplot::plot_grid(cowplot::plot_grid(pa_1990_hist, pa_2018_hist, nrow = 1, labels = "AUTO"), cowplot::plot_grid(NULL, pa_chng_hist, NULL, rel_widths = c(0.5, 1, 0.5), nrow = 1, labels = c("", "C", "")), nrow = 2)
 
 # save plot
-cowplot::save_plot("outputs/pa_hist.png", pa_hist, base_height = 7, base_width = 10, dpi = 600)
+cowplot::save_plot("outputs/appendix_A_fig_s1_pa_hist.png", pa_hist, base_height = 7, base_width = 10, dpi = 600)
 
 #### Appendix C - ROBITT ####
 
@@ -1248,7 +1246,7 @@ unp_rast <- raster::rasterFromXYZ(dplyr::filter(sites_gr, prot == "unp") %>% dpl
 
 periods <- as.list(1990:2018)
 
-##### Geographic domain - spatial bias #####
+##### Appendix C Fig S1 - Spatial bias #####
 
 ## nearest neighbour index
 
@@ -1294,9 +1292,11 @@ spatBias_tax_comb2 <- cowplot::ggdraw(spatBias_tax_comb_leg) +
   ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", color = NA))
 
 # save plot
-cowplot::save_plot("outputs/appendix_B_fig_s1_spatbias.png", spatBias_tax_comb2, base_height = 8, base_aspect_ratio = 1, dpi = 300)
+cowplot::save_plot("outputs/appendix_C_fig_s1_spatbias.png", spatBias_tax_comb2, base_height = 8, base_aspect_ratio = 1, dpi = 300)
 
-##### Geographic domain - spatial coverage #####
+##### Appendix C Fig S2 - Spatial coverage #####
+
+# Visits
 
 # protected
 spat_pa <- occAssess::assessSpatialCov(periods = periods,
@@ -1326,7 +1326,6 @@ spat_unp <- occAssess::assessSpatialCov(periods = periods,
                                         minPeriods = 1,
                                         returnRaster = TRUE)
 
-# function to create plots of spatial coverage
 spat_plot <- function(x, df, pa, prop) {
   
   # extract dataframe from raster
@@ -1354,13 +1353,13 @@ spat_plot <- function(x, df, pa, prop) {
     
   }
   
-  p <- ggplot2::ggplot(data = map_df, aes(x = x, y = y)) +
+  p <- ggplot(data = map_df, aes(x = x, y = y)) +
     # add GB
-    ggplot2::geom_tile(data = sites_gr, ggplot2::aes(x = EASTING, y = NORTHING), fill = "grey", colour = "grey", lwd = 0, alpha = 0.1) +
-    # add protected areas
-    {if(pa == TRUE) ggplot2::geom_tile(data = dplyr::filter(sites_gr, prot == "pa"), ggplot2::aes(x = EASTING, y = NORTHING), alpha = 0.5, fill = "#0077BB", colour = "#0077BB", lwd = 0)} +
-    # add unprotected areas
-    {if(pa == FALSE) ggplot2::geom_tile(data = dplyr::filter(sites_gr, prot == "unp"), aes(x = EASTING, y = NORTHING), alpha = 0.5, fill = "#EE7733", colour = "#EE7733", lwd = 0)} +
+    ggplot2::geom_tile(data = sites_gr, ggplot2::aes(x = EASTING, y = NORTHING), fill = "lightgrey", colour = "lightgrey", lwd = 0, alpha = 0.1) +
+    # add protected areas # #0077BB
+    {if(pa == TRUE) ggplot2::geom_tile(data = dplyr::filter(sites_gr, prot == "pa"), ggplot2::aes(x = EASTING, y = NORTHING), alpha = 0.5, fill = "grey70", colour = "grey70", lwd = 0)} +
+    # add unprotected areas # #EE7733
+    {if(pa == FALSE) ggplot2::geom_tile(data = dplyr::filter(sites_gr, prot == "unp"), aes(x = EASTING, y = NORTHING), alpha = 0.5, fill = "grey70", colour = "grey70", lwd = 0)} +
     # add records - overlap
     {if(prop == FALSE) ggplot2::geom_tile(data = tidyr::drop_na(map_df), fill = "black")} + 
     # add records proportion of years sampled
@@ -1368,13 +1367,14 @@ spat_plot <- function(x, df, pa, prop) {
     # colour scheme for proportion of years sampled
     {if(prop == TRUE) ggplot2::scale_fill_viridis_c(limits = c(0, 1))} +
     # title
-    ggplot2::labs(title = names(df[[x]])) +
+    {if(pa == TRUE) ggplot2::labs(title = paste0(names(df[[x]]), "\n(protected)"))} +
+    {if(pa == FALSE) ggplot2::labs(title = paste0(names(df[[x]]), "\n(unprotected)"))} +
     # legend title
     {if(prop == TRUE) ggplot2::labs(fill = "Proportion\nof years\nsampled")} +
     # equal coordinates
-    ggplot2::coord_equal() +
+    coord_equal() +
     # edit theme
-    ggplot2::theme(axis.ticks = ggplot2::element_blank(), axis.text = ggplot2::element_blank(), axis.title = ggplot2::element_blank(), panel.border = ggplot2::element_blank(), panel.grid = ggplot2::element_blank(), panel.grid.major = ggplot2::element_blank(), panel.grid.minor = ggplot2::element_blank(), axis.line = ggplot2::element_blank(), panel.background = ggplot2::element_blank()) +
+    ggplot2::theme(plot.title = ggplot2::element_text(size = 4.5), legend.title = ggplot2::element_text(size = 4.5), legend.text = ggplot2::element_text(size = 3), axis.ticks = ggplot2::element_blank(), axis.text = ggplot2::element_blank(), axis.title = ggplot2::element_blank(), panel.border = ggplot2::element_blank(), panel.grid = ggplot2::element_blank(), panel.grid.major = ggplot2::element_blank(), panel.grid.minor = ggplot2::element_blank(), axis.line = ggplot2::element_blank(), panel.background = ggplot2::element_blank()) +
     # legend
     {if(prop == FALSE) ggplot2::theme(legend.position = "none")}
   
@@ -1387,7 +1387,7 @@ spat_plot <- function(x, df, pa, prop) {
       {if(pa == FALSE) ggplot2::geom_histogram(fill = "#EE7733")} +
       ggplot2::scale_x_continuous(expand = c(0,0)) +
       ggplot2::scale_y_continuous(expand = c(0,0)) +
-      ggplot2::labs(x = "Proportion of years sampled", y = "Number of grid cells", title = names(df[[x]])) +
+      ggplot2::labs(x = "Proportion of years sampled", y = "Number of grid cells", title = names(df[[x]]),) +
       cowplot::theme_cowplot()
     
   }
@@ -1404,19 +1404,40 @@ spat_plot <- function(x, df, pa, prop) {
   
 }
 
-# create plots
 spat_pa_out <- lapply(1:length(spat_pa[[1]]), function(x) spat_plot(x = x, df = spat_pa[[2]], pa = TRUE, prop = FALSE))
+
 spat_unp_out <- lapply(1:length(spat_unp[[1]]), function(x) spat_plot(x = x, df = spat_unp[[2]], pa = FALSE, prop = FALSE))
 
-# combine protected and unprotected plots
-spat_comb <- cowplot::plot_grid(spat_pa_out[[1]], spat_unp_out[[1]], spat_pa_out[[2]], spat_unp_out[[2]], spat_pa_out[[3]], spat_unp_out[[3]], spat_pa_out[[4]], spat_unp_out[[4]], spat_pa_out[[5]], spat_unp_out[[5]], spat_pa_out[[6]], spat_unp_out[[6]], ncol = 4)
+# # combine
+# spat_comb <- cowplot::plot_grid(spat_pa_out[[1]], spat_unp_out[[1]], spat_pa_out[[2]], spat_unp_out[[2]], spat_pa_out[[3]], spat_unp_out[[3]], spat_pa_out[[4]], spat_unp_out[[4]], spat_pa_out[[5]], spat_unp_out[[5]], spat_pa_out[[6]], spat_unp_out[[6]], ncol = 4)
+# 
+# # save
+# cowplot::save_plot("occ_assess/spat_comb_grey.png", spat_comb, base_height = 12, base_aspect_ratio = 0.7, dpi = 300)
+
+# part 1
+spat_comb1 <- cowplot::plot_grid(spat_pa_out[[1]], spat_unp_out[[1]], spat_pa_out[[2]], spat_unp_out[[2]], ncol = 2)
 
 # save
-cowplot::save_plot("outputs/appendix_B_fig_s2_spat_comb.png", spat_comb, base_height = 12, base_aspect_ratio = 0.7, dpi = 300)
+cowplot::save_plot("outputs/appendix_C_fig_s2_spat_comb_part1.png", spat_comb1, base_height = 4, base_aspect_ratio = 0.53, dpi = 300)
 
-##### Geographic domain - spatiotemporal coverage #####
+# part 2
+spat_comb2 <- cowplot::plot_grid(spat_pa_out[[3]], spat_unp_out[[3]], spat_pa_out[[4]], spat_unp_out[[4]], ncol = 2)
 
-# calculate spatiotemporal coverage
+# save
+cowplot::save_plot("outputs/appendix_C_fig_s2_spat_comb_part2.png", spat_comb2, base_height = 4, base_aspect_ratio = 0.53, dpi = 300)
+
+# part 3
+spat_comb3 <- cowplot::plot_grid(spat_pa_out[[5]], spat_unp_out[[5]], spat_pa_out[[6]], spat_unp_out[[6]], ncol = 2)
+
+# save
+cowplot::save_plot("outputs/appendix_C_fig_s2_spat_comb_part3.png", spat_comb3, base_height = 4, base_aspect_ratio = 0.53, dpi = 300)
+
+##### Spatiotemporal coverage #####
+
+###### Appendix C Fig S3 - Maps of spatiotemporal coverage ######
+
+# Visits
+
 spatime_pa <- occAssess::assessSpatialCov(periods = periods,
                                           dat = dplyr::filter(all_obs, prot == "pa"),
                                           species = "species", 
@@ -1445,29 +1466,44 @@ spatime_unp <- occAssess::assessSpatialCov(periods = periods,
                                            returnRaster = TRUE)
 # repeated at res  = 10000
 
-# create plots
 spatime_pa_out <- lapply(1:length(spatime_pa[[1]]), function(x) spat_plot(x = x, df = spatime_pa[[2]], pa = TRUE, prop = TRUE))
+
 spatime_unp_out <- lapply(1:length(spatime_unp[[1]]), function(x) spat_plot(x = x, df = spatime_unp[[2]], pa = FALSE, prop = TRUE))
 
-# legend
-spatime_leg <- cowplot::get_legend(spatime_pa_out[[1]][[1]])
+spatime_leg <- cowplot::get_legend(spatime_pa_out[[1]][[1]] + ggplot2::theme(legend.key.size = ggplot2::unit(0.3, 'cm')))
 
-# combine plots
-spatime_comb <- cowplot::plot_grid(spatime_pa_out[[1]][[1]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[1]][[1]] + ggplot2::theme(legend.position = "none"), spatime_pa_out[[2]][[1]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[2]][[1]] + ggplot2::theme(legend.position = "none"), spatime_pa_out[[3]][[1]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[3]][[1]] + ggplot2::theme(legend.position = "none"), spatime_pa_out[[4]][[1]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[4]][[1]] + ggplot2::theme(legend.position = "none"), spatime_pa_out[[5]][[1]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[5]][[1]] + ggplot2::theme(legend.position = "none"), spatime_pa_out[[6]][[1]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[6]][[1]] + ggplot2::theme(legend.position = "none"), ncol = 4)
+# part 1
+spatime_comb_p1 <- cowplot::plot_grid(spatime_pa_out[[1]][[1]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[1]][[1]] + ggplot2::theme(legend.position = "none"), spatime_pa_out[[2]][[1]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[2]][[1]] + ggplot2::theme(legend.position = "none"), ncol = 2)
 
-# combine plots with leged
-spatime_comb2 <- cowplot::plot_grid(spatime_comb, cowplot::plot_grid(NULL, spatime_leg, NULL, nrow = 3), ncol = 2, rel_widths = c(4, 0.6))
+spatime_comb_p1 <- cowplot::plot_grid(spatime_comb_p1, cowplot::plot_grid(NULL, spatime_leg, NULL, nrow = 3), ncol = 2, rel_widths = c(4, 1))
 
 # save
-cowplot::save_plot("outputs/appendix_B_fig_s3_spatime.png", spatime_comb2, base_height = 12, base_aspect_ratio = 0.7, dpi = 300)
+cowplot::save_plot("outputs/appendix_C_fig_s3_spatime_comb_grey_part1.png", spatime_comb_p1, base_height = 4, base_aspect_ratio = 0.65, dpi = 300)
 
-# histograms
+# part 2
+spatime_comb_p2 <- cowplot::plot_grid(spatime_pa_out[[3]][[1]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[3]][[1]] + ggplot2::theme(legend.position = "none"), spatime_pa_out[[4]][[1]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[4]][[1]] + ggplot2::theme(legend.position = "none"), ncol = 2)
+
+spatime_comb_p2 <- cowplot::plot_grid(spatime_comb_p2, cowplot::plot_grid(NULL, spatime_leg, NULL, nrow = 3), ncol = 2, rel_widths = c(4, 1))
+
+# save
+cowplot::save_plot("outputs/appendix_C_fig_s3_spatime_comb_grey_part2.png", spatime_comb_p2, base_height = 4, base_aspect_ratio = 0.65, dpi = 300)
+
+# part 3
+spatime_comb_p3 <- cowplot::plot_grid(spatime_pa_out[[5]][[1]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[5]][[1]] + ggplot2::theme(legend.position = "none"), spatime_pa_out[[6]][[1]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[6]][[1]] + ggplot2::theme(legend.position = "none"), ncol = 2)
+
+spatime_comb_p3 <- cowplot::plot_grid(spatime_comb_p3, cowplot::plot_grid(NULL, spatime_leg, NULL, nrow = 3), ncol = 2, rel_widths = c(4, 1))
+
+# save
+cowplot::save_plot("outputs/appendix_C_fig_s3_spatime_comb_grey_part3.png", spatime_comb_p3, base_height = 4, base_aspect_ratio = 0.65, dpi = 300)
+
+###### Appendix C Fig S4 - Histograms ######
+
 spatime_hist <- cowplot::plot_grid(spatime_pa_out[[1]][[2]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[1]][[2]] + ggplot2::theme(legend.position = "none"), spatime_pa_out[[2]][[2]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[2]][[2]] + ggplot2::theme(legend.position = "none"), spatime_pa_out[[3]][[2]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[3]][[2]] + ggplot2::theme(legend.position = "none"), spatime_pa_out[[4]][[2]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[4]][[2]] + ggplot2::theme(legend.position = "none"), spatime_pa_out[[5]][[2]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[5]][[2]] + ggplot2::theme(legend.position = "none"), spatime_pa_out[[6]][[2]] + ggplot2::theme(legend.position = "none"), spatime_unp_out[[6]][[2]] + ggplot2::theme(legend.position = "none"), ncol = 4)
 
 # save
-cowplot::save_plot("outputs/appendix_B_fig_s4_spatime_hist.png", spatime_hist, base_height = 12, base_aspect_ratio = 1.2, dpi = 300)
+cowplot::save_plot("outputs/appendix_C_fig_s4_spatime_hist.png", spatime_hist, base_height = 12, base_aspect_ratio = 1.2, dpi = 300)
 
-##### Taxonomic domain - taxonomic coverage #####
+##### Appendix C Fig S5 - Taxonomic coverage #####
 
 ###### Taxonomic groups ######
 
@@ -1592,9 +1628,11 @@ func_cov_plot <- tc_plot(df = func_cov_df, tax = FALSE)
 tax_cov_comb <- cowplot::plot_grid(tax_cov_plot, func_cov_plot, ncol = 2)
 
 # save
-cowplot::save_plot("outputs/appendix_B_fig_s5_tax_cov.png", tax_cov_comb, base_height = 5, base_aspect_ratio = 3, dpi = 300)
+cowplot::save_plot("outputs/appendix_C_fig_s5_tax_cov.png", tax_cov_comb, base_height = 5, base_aspect_ratio = 3, dpi = 300)
 
-##### Other potential biases - proportion of repeats #####
+##### Other potential biases #####
+
+###### Appendix C Fig S6 - Proportion of repeats ######
 
 ## repeat visits proportion
 
@@ -1644,17 +1682,16 @@ stack_comb <- cowplot::plot_grid(stack_ants + ggplot2::theme(legend.position = "
   cowplot::plot_grid(., cowplot::get_legend(stack_ants), ncol = 2, rel_widths = c(1, 0.2))
 
 # save
-cowplot::save_plot("outputs/appendix_B_fig_s5_stacks.png", stack_comb, base_height = 8, base_aspect_ratio = 1.1, dpi = 300)
+cowplot::save_plot("outputs/appendix_C_fig_s6_stacks.png", stack_comb, base_height = 8, base_aspect_ratio = 1.1, dpi = 300)
 
 #### Appendix D ####
 
+##### Appendix D Fig S1 - Converged subset #####
 
-
-###### Species whose models converged ######
-
+## Species whose models converged
 ## Rhat < 1.1 for first and last years
 
-##### Extract and preprocess rhats #####
+###### Extract and preprocess rhats ######
 
 # rhat <- function(tax_path, tax_grp, filetype, chained = FALSE, max_iter) {
 #   
@@ -1739,7 +1776,7 @@ conv_spp <- fl_rhat %>%
   dplyr::group_by(species) %>%
   dplyr::filter(all(Rhat < 1.1))
 
-##### rhat analyses #####
+###### Rhat analyses ######
 
 # filter to species whose models converged
 occ_pa_conv <- dplyr::filter(occ_pa, species %in% conv_spp$species)
@@ -1784,7 +1821,7 @@ chng_comb_conv <- dplyr::bind_rows(
 
 chng_diff_out_conv <- change_diff(chng_df_pa = chng_pa_conv, chng_df_unp = chng_unp_conv)
 
-chng_over_conv <- est_plot_func(grp = "Overall", est_df = chng_comb_conv, est_diff = chng_diff_out_conv, vari = "change", lim = c(-2.8, 2.8), axlab = "Growth rate")
+chng_over_conv <- est_plot_func(grp = "Overall", est_df = chng_comb_conv, est_diff = chng_diff_out_conv, vari = "change", lim = c(-0.5, 0.5), axlab = "Growth rate")
 
 chng_comb_over_conv <- cowplot::plot_grid(msi_over_conv, chng_over_conv[[1]], nrow = 2, labels = "AUTO")
 
@@ -1812,32 +1849,266 @@ beta_diff_out_conv <- beta_diff(beta_df = beta_contr_conv)
 
 ## total temporal beta diversity
 
-beta_over_conv <- est_plot_func(grp = "Overall", est_df = beta_tbi_conv, est_diff = beta_diff_out_conv, vari = "tbi_val", lim = c(-2.8, 2.8), axlab = "Temporal\nbeta diversity (%)")
+beta_over_conv <- est_plot_func(grp = "Overall", est_df = beta_tbi_conv, est_diff = beta_diff_out_conv, vari = "tbi_val", lim = c(-3.6, 3.6), axlab = "Temporal\nbeta diversity (%)")
 
 ## loss
 
-loss_over_conv <- est_plot_func(grp = "Overall", est_df = beta_tbi_conv, est_diff = beta_diff_out_conv, vari = "loss", lim = c(-2.3, 2.3), axlab = "Loss (%)")
-
-# View(loss_over_conv[[2]])
-# View(loss_over_conv[[3]])
-# View(loss_over_conv[[4]])
+loss_over_conv <- est_plot_func(grp = "Overall", est_df = beta_tbi_conv, est_diff = beta_diff_out_conv, vari = "loss", lim = c(-3.4, 3.4), axlab = "Loss (%)")
 
 ## gain
 
-gain_over_conv <- est_plot_func(grp = "Overall", est_df = beta_tbi_conv, est_diff = beta_diff_out_conv, vari = "gain", lim = c(-1.4, 1.4), axlab = "Gain (%)")
-
-# View(gain_over_conv[[2]])
-# View(gain_over_conv[[3]])
-# View(gain_over_conv[[4]])
+gain_over_conv <- est_plot_func(grp = "Overall", est_df = beta_tbi_conv, est_diff = beta_diff_out_conv, vari = "gain", lim = c(-1.6, 1.6), axlab = "Gain (%)")
 
 beta_over_plot_conv <- cowplot::plot_grid(NULL, beta_over_conv[[1]], NULL, nrow = 1, rel_widths = c(0.4, 1, 0.4), labels = c("", "D", "")) %>% cowplot::plot_grid(., cowplot::plot_grid(loss_over_conv[[1]], gain_over_conv[[1]], nrow = 1, labels = c("E", "F")), nrow = 2)
 
 conv_plot <- cowplot::plot_grid(cowplot::plot_grid(NULL, spr_over_conv[[1]], NULL, labels = c("", "A", ""), rel_widths = c(0.4, 1, 0.4), ncol = 3), cowplot::plot_grid(msi_over_conv, chng_over_conv[[1]], labels = c("B", "C"), ncol = 2), beta_over_plot_conv, nrow = 3, rel_heights = c(1, 1, 2))
 
 # save plot
-cowplot::save_plot("outputs/appendix_C_fig_s1_conv.png", conv_plot, base_height = 12, base_width = 10, dpi = 300)
+cowplot::save_plot("outputs/appendix_D_fig_s1_conv.png", conv_plot, base_height = 12, base_width = 10, dpi = 300)
 
-##### Appendix C Fig S3 - Predators combined plots #####
+##### Appendix D Fig S2 - 10% vs 50% threshold #####
+
+###### Preprocessing ######
+
+# # protected sites
+# pro_50 <- pa_pr_1990 %>%
+#   # 50 % protection threshold
+#   dplyr::filter(pa_prop > 0.5) %>%
+#   # protected or not
+#   dplyr::mutate(prot = "pa")
+# 
+# # unprotected sites
+# unp <- pa_pr_2018 %>%
+#   # 1 % protection threshold
+#   dplyr::filter(pa_prop < 0.01) %>%
+#   # protected or not
+#   dplyr::mutate(prot = "unp")
+# 
+# # protected status
+# pro_stat_50 <- dplyr::bind_rows(pro_50, unp)
+# 
+# # save: pro_stat_50
+# saveRDS(pro_stat_50, "data/pro_stat_50.rds")
+# 
+# pro_stat_50 <- readRDS("data/pro_stat_50.rds") %>% 
+#   dplyr::mutate(pa = ifelse(prot == "pa", 1, 0))
+# 
+# sites_orig <- readRDS("data/regions_non-crossed.rds")
+# 
+# regs_non <- dplyr::left_join(dplyr::select(sites_orig, -pa), dplyr::select(pro_stat_50, grid_ref, pa), by = "grid_ref") %>% 
+#   dplyr::mutate(pa = ifelse(is.na(pa), 0, pa)) %>% 
+#   dplyr::select(1:8, pa, unp)
+# 
+# saveRDS(regs_non, "data/regions_non-crossed50.rds")
+#
+
+## Run occupancy models on HPC - see example code ##
+
+# # Taxonomic group(s)
+# taxa <- c("Ants_50")
+# ntax <- length(taxa)
+#
+# regions <- c("GB", "pa", "unp")
+# nregions <- length(regions)
+#
+# vers <- c("2021_Francesca_bwars_rerun")
+#
+# # create roster - run for multiple groups & multiple regions
+# # ignore warning
+# roster <- wrappeR::createRoster(index = 1:(nregions * ntax),
+#                        modPath = "/data-s3/occmods/",
+#                        metaPath = "/data-s3/metadata/",
+#                        ver = rep(vers, each = nregions),
+#                        indicator = "all",
+#                        region = rep(regions, times = ntax),
+#                        nSamps = 999,
+#                        minObs = 1,
+#                        scaleObs = "region",
+#                        write = TRUE,
+#                        outPath = "~/proarea/data/filtered/",
+#                        group = rep(taxa, each = nregions),
+#                        t0 = startyear,
+#                        tn = endyear)
+#
+# # filtered data
+# filt_tax <- lapply(roster, wrappeR::applySamp, parallel = FALSE)
+# 
+# taxa <- c("Ants", "Ants_50")
+# 
+# ## observation metadata
+# 
+# meta_pa <- lapply(taxa, function(x) {
+#   
+#   load_rdata(paste0("data/filtered/", x, "_all_pa_samp.rdata")) %>%
+#     .[[2]] %>%
+#     dplyr::mutate(tax_grp = x)
+#   
+# }) %>%
+#   dplyr::bind_rows(.)
+# 
+# pass_keep <- meta_pa %>%
+#   dplyr::filter(rot_EqualWt_r_pa == TRUE) %>%
+#   .$Species_r_pa
+# 
+# # read in filtered data
+# occ_read <- function(x, reg) {
+#   
+#   load_rdata(paste0("data/filtered/", x, "_all_", reg, "_samp.rdata")) %>%
+#     .[[1]] %>%
+#     dplyr::mutate(grp = x)
+#   
+# }
+# 
+# # focal years 1990 to 2018
+# foc_yrs <- paste0("year_", startyear:endyear)
+# 
+# ## pa
+# 
+# occ_pa_prep <- lapply(taxa, function(x) occ_read(x = x, reg = "pa")) %>%
+#   dplyr::bind_rows(.) %>%
+#   # trim to focal years 1990 to 2018
+#   dplyr::select(foc_yrs, iteration, species, grp) %>%
+#   # add region aggregate name
+#   dplyr::mutate(prot = "pa")
+# 
+# spp_pa <- data.frame(spp = unique(occ_pa_prep$species))
+# 
+# ## unp
+# 
+# occ_unp_prep <- lapply(taxa, function(x) occ_read(x = x, reg = "unp")) %>%
+#   dplyr::bind_rows(.) %>%
+#   # trim to focal years 1990 to 2018
+#   dplyr::select(foc_yrs, iteration, species, grp)  %>%
+#   # add region aggregate name
+#   dplyr::mutate(prot = "unp")
+# 
+# spp_unp <- data.frame(spp = unique(occ_unp_prep$species))
+# 
+# # unify protected and unprotected species lists
+# 
+# all_spp <- dplyr::inner_join(spp_pa, spp_unp) %>%
+#   # remove non-predatory ladybirds
+#   dplyr::filter(!spp %in% c("halyzia sedecimguttata", "henosepilachna argus", "psyllobora vigintiduopunctata", "subcoccinella vigintiquattuorpunctata", "tytthaspis sedecimpunctata")) %>%
+#   # remove non-natives
+#   dplyr::filter(!spp %in% c("harmonia axyridis", "steatoda nobilis"))
+# 
+# # update to match species lists
+# occ_pa_prep <- dplyr::filter(occ_pa_prep, species %in% all_spp$spp)
+# occ_unp_prep <- dplyr::filter(occ_unp_prep, species %in% all_spp$spp)
+# 
+# # remove species that didn't pass model quality threshold
+# occ_pa_prep <- dplyr::filter(occ_pa_prep, species %in% pass_keep)
+# occ_unp_prep <- dplyr::filter(occ_unp_prep, species %in% pass_keep)
+
+###### Load prepared occupancy data for ants ######
+
+# prepared occupancy data
+occ_pa_ants <- readRDS("data/occ_pa_ants.rds")
+occ_unp_ants <- readRDS("data/occ_unp_ants.rds")
+
+###### Run analyses ######
+
+spr_pa_ants <- sprich(occ_df = occ_pa_ants)
+spr_unp_ants <- sprich(occ_df = occ_unp_ants)
+
+spr_comb_ants <- dplyr::bind_rows(dplyr::select(spr_pa_ants, grp, iteration, prot, spr), dplyr::select(spr_unp_ants, grp, iteration, prot, spr))
+
+spr_diff_out_ants <- sprich_diff(spr_df_pa = spr_pa_ants, spr_df_unp = spr_unp_ants)
+
+GB_func_spp <- occ_pa_ants %>% 
+  dplyr::distinct(species, grp, .keep_all = TRUE) %>% 
+  dplyr::count(grp)
+
+spr_ants <- est_plot_func(grp = "Ants", est_df = spr_comb_ants, est_diff = spr_diff_out_ants, vari = "spr", lim = c(-1.9, 1.9), axlab = "Species\nrichness", yaxs = FALSE)
+
+spr_ants_50 <- est_plot_func(grp = "Ants_50", est_df = spr_comb_ants, est_diff = spr_diff_out_ants, vari = "spr", lim = c(-1.9, 1.9), axlab = "")
+
+msi_pa_ants <- msi(occ_df = occ_pa_ants)
+msi_unp_ants <- msi(occ_df = occ_unp_ants)
+
+msi_sum_pa_ants <- msi_sum(msi_df = msi_pa_ants)
+msi_sum_unp_ants <- msi_sum(msi_df = msi_unp_ants)
+
+msi_sum_comb_ants <- dplyr::bind_rows(msi_sum_pa_ants, msi_sum_unp_ants)
+
+msi_ants <- trend_plot_func(grp = "Ants", msi_sum = msi_sum_comb_ants, lim = c(0.045, 0.153), leg = FALSE, axlab = "Geometric\nmean occupancy")
+
+msi_ants_50 <- trend_plot_func(grp = "Ants_50", msi_sum = msi_sum_comb_ants, lim = c(0.045, 0.153), leg = FALSE, axlab = " \n ")
+
+trend_pa_ants <- trend_change(occ_df = occ_pa_ants, taxa = unique(occ_unp_ants$grp))
+trend_unp_ants <- trend_change(occ_df = occ_unp_ants, taxa = unique(occ_unp_ants$grp))
+
+chng_pa_ants <- tax_change(trend_df = trend_pa_ants)
+chng_unp_ants <- tax_change(trend_df = trend_unp_ants)
+
+chng_comb_ants <- dplyr::bind_rows(
+  dplyr::select(chng_pa_ants, grp, iteration, change) %>%
+    dplyr::mutate(prot = "Protected"),
+  dplyr::select(chng_unp_ants, grp, iteration, change) %>%
+    dplyr::mutate(prot = "Unprotected")) %>%
+  dplyr::mutate(prot = factor(prot, levels = c("Unprotected", "Protected")))
+
+chng_diff_out_ants <- change_diff(chng_df_pa = chng_pa_ants, chng_df_unp = chng_unp_ants)
+
+chng_ants <- est_plot_func(grp = "Ants", est_df = chng_comb_ants, est_diff = chng_diff_out_ants, vari = "change", lim = c(-2.2, 2.2), axlab = "Growth rate", yaxs = FALSE, xaxs = FALSE)
+
+chng_ants_50 <- est_plot_func(grp = "Ants_50", est_df = chng_comb_ants, est_diff = chng_diff_out_ants, vari = "change", lim = c(-2.2, 2.2), axlab = " ", xaxs = FALSE)
+
+# beta_tbi_ants <- lapply(unique(occ_pa_ants$grp), function(xgrp) {
+# 
+#   out <- lapply(1:999, function(x) beta_tbi_func(grp = xgrp, it = x, occ_df_pa = occ_pa_ants, occ_df_unp = occ_unp_ants)) %>%
+#     # bind across iterations
+#   dplyr::bind_rows()
+# 
+# }) %>%
+#   # bind across groups
+#   dplyr::bind_rows()
+# 
+# saveRDS(beta_tbi_ants, "data/beta_tbi_ants.rds")
+
+beta_tbi_ants <- readRDS("data/beta_tbi_ants.rds") %>%
+  dplyr::mutate(prot = factor(prot, levels = c("Unprotected", "Protected"))) %>%
+  # convert to percentages
+  dplyr::mutate_at(vars(tbi_val, loss, gain), ~. * 100)
+
+beta_contr_ants <- dplyr::left_join(dplyr::filter(beta_tbi_ants, prot == "Protected"), dplyr::filter(beta_tbi_ants, prot == "Unprotected"), by = c("iteration", "grp"))
+
+beta_diff_out_ants <- beta_diff(beta_df = beta_contr_ants)
+
+# total
+
+beta_ants <- est_plot_func(grp = "Ants", est_df = beta_tbi_ants, est_diff = beta_diff_out_ants, vari = "tbi_val", lim = c(-15.3, 15.3), axlab = "Temporal\nbeta diversity (%)", xaxs = FALSE, yaxs = FALSE)
+
+beta_ants_50 <- est_plot_func(grp = "Ants_50", est_df = beta_tbi_ants, est_diff = beta_diff_out_ants, vari = "tbi_val", lim = c(-15.3, 15.3), axlab = " ", xaxs = FALSE)
+
+# loss
+
+loss_ants <- est_plot_func(grp = "Ants", est_df = beta_tbi_ants, est_diff = beta_diff_out_ants, vari = "loss", lim = c(-14.0, 14.0), axlab = "Loss (%)", xaxs = FALSE, yaxs = FALSE)
+
+loss_ants_50 <- est_plot_func(grp = "Ants_50", est_df = beta_tbi_ants, est_diff = beta_diff_out_ants, vari = "loss", lim = c(-14.0, 14.0), axlab = " ", xaxs = FALSE)
+
+# gain
+
+gain_ants <- est_plot_func(grp = "Ants", est_df = beta_tbi_ants, est_diff = beta_diff_out_ants, vari = "gain", lim = c(-13.2, 13.2), axlab = "Gain (%)", yaxs = FALSE)
+
+gain_ants_50 <- est_plot_func(grp = "Ants_50", est_df = beta_tbi_ants, est_diff = beta_diff_out_ants, vari = "gain", lim = c(-13.2, 13.2), axlab = " ")
+
+# titles
+
+tit_ants <- ggplot2::ggplot() +
+  ggplot2::annotate("text", x = 1, y = 1, size = 8, label = "Ants (10 % protection threshold)") + 
+  ggplot2::theme_void()
+
+tit_ants_50 <- ggplot2::ggplot() +
+  ggplot2::annotate("text", x = 1, y = 1, size = 8, label = "Ants (50 % protection threshold)") + 
+  ggplot2::theme_void()
+
+ants_comb <- cowplot::plot_grid(tit_ants, tit_ants_50, spr_ants[[1]], spr_ants_50[[1]], msi_ants, msi_ants_50, chng_ants[[1]], chng_ants_50[[1]], beta_ants[[1]], beta_ants_50[[1]], loss_ants[[1]], loss_ants_50[[1]], gain_ants[[1]], gain_ants_50[[1]], ncol = 2, labels = c("", "", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"), rel_heights = c(0.2, 1, 1, 1, 1, 1, 1))
+
+# save plots
+cowplot::save_plot("outputs/appendix_D_fig_s2_ants_comb.png", ants_comb, base_height = 14, base_width = 10, dpi = 600)
+
+##### Appendix D Fig S3 - Predators combined plots #####
 
 # predators - species richness
 spr_pred <- est_plot_func(grp = "Predators", est_df = spr_comb, est_diff = spr_diff_out, vari = "spr", lim = c(-31, 31), axlab = "Species richness")
@@ -1864,6 +2135,16 @@ beta_pred_plot <- cowplot::plot_grid(NULL, beta_pred[[1]], NULL, nrow = 1, rel_w
 pred_plot <- cowplot::plot_grid(cowplot::plot_grid(NULL, spr_pred[[1]], NULL, labels = c("", "A", ""), rel_widths = c(0.4, 1, 0.4), ncol = 3), cowplot::plot_grid(msi_pred, chng_pred[[1]], labels = c("B", "C"), ncol = 2), beta_pred_plot, nrow = 3, rel_heights = c(1, 1, 2))
 
 # save plot
-cowplot::save_plot("outputs/appendix_C_fig_s3_pred.png", pred_plot, base_height = 12, base_width = 10, dpi = 300)
+cowplot::save_plot("outputs/appendix_D_fig_s3_pred.png", pred_plot, base_height = 12, base_width = 10, dpi = 300)
+
+##### Appendix D Fig S4 - Very rare vs very common #####
+
+rang_GB <- readRDS("data/rang_GB.rds")
+
+quant10 <- quantile(rang_GB$rang, 0.10)
+quant90 <- quantile(rang_GB$rang, 0.90)
+
+quantlow <- quant10
+quanthigh <- quant90
 
 #### End ####
