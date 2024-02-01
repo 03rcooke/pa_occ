@@ -59,6 +59,9 @@ load_rdata <- function(fileName) {
 # set location of temporary directory for raster package
 rasterOptions(tmpdir = "temp")
 
+# source pa_pr function
+source("functions/pa_pr_fun.R")
+
 # set plotting theme
 ggplot2::theme_set(cowplot::theme_cowplot())
 
